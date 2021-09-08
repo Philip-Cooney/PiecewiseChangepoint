@@ -94,8 +94,9 @@ Collapsing_Model <- collapsing.model(df,
 ```
 
 ```{r, include=FALSE}
-pathway <- "C:/Users/phili/OneDrive/PhD/R packages/PiecewiseChangepoint/PiecewiseChangepoint/"
-Collapsing_Model<- readRDS(file = paste0(pathway,"Examples/Collapsing_Model.rds"))
+#pathway <- "C:/Users/phili/OneDrive/PhD/R packages/PiecewiseChangepoint/PiecewiseChangepoint/"
+#Collapsing_Model<- readRDS(file = paste0(pathway,"Examples/Collapsing_Model.rds"))
+Collapsing_Model<- readRDS(file = paste0("Examples/Collapsing_Model.rds"))
 print(Collapsing_Model)
 
 
@@ -106,7 +107,7 @@ As we would expect the one change-point model has the highest posterior probabil
 print(Collapsing_Model)
 ```
 
-We should investigate the mixing of the chains to insure they are satisfactory. The plot below indicates that is the case with jumps betwen models occurring frequently. This is an advantage of the method as other methods such as Reversible Jump Markov Chain Monte Carlo (RJMCMC) [@Green.1995] which move between model dimensions can have difficulty moving between models and require careful consideration of the proposal density.  
+We should investigate the mixing of the chains to ensure they are satisfactory. The plot below indicates that is the case with jumps between models occurring frequently. This is an advantage of the method as other methods such as Reversible Jump Markov Chain Monte Carlo (RJMCMC) [@Green.1995] which move between model dimensions can have difficulty moving between models and require careful consideration of the proposal density.  
 
 
 ```{r}
@@ -150,7 +151,7 @@ mod_comp$mod.comp
 We see that the Piecewise Exponential model fits the data considerably better than the other parametric models.  
 
 ```{r, echo = FALSE}
-readRDS(file = paste0(pathway,"Examples/mod_comp.rds"))
+readRDS(file = paste0("Examples/mod_comp.rds"))
 
 ```
 
@@ -172,9 +173,10 @@ add_km(mod_comp$plot_Surv_all, df_true, colour = "black")
 
 ```{r, echo = FALSE}
 
-knitr::include_graphics(paste0(pathway,"Examples/plt_Survival.png"))
+knitr::include_graphics(paste0("Examples/plt_Survival.png"))
 
 ```
+
 ## Ensuring consistency when evalutating the model on different timescales
 
 One criticism of methods which employ marginal likelihood for the purpose of model selection is that marginal likelihood is sensitive to the [prior](https://www.youtube.com/watch?v=kisFIbkfDUs&ab_channel=BenLambert). This is distinct from the posterior distribution of the parameters which in the presence of sufficient data will dominate (a suitably vague) prior.

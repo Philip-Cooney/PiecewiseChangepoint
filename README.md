@@ -104,9 +104,9 @@ print(Collapsing_Model)
     ##   3rd Qu.:0.9318    3rd Qu.:0.7917    3rd Qu.:0.2409  
     ##   Max.   :1.2486    Max.   :1.0568    Max.   :0.4006
 
-We should investigate the mixing of the chains to insure they are
+We should investigate the mixing of the chains to ensure they are
 satisfactory. The plot below indicates that is the case with jumps
-betwen models occurring frequently. This is an advantage of the method
+between models occurring frequently. This is an advantage of the method
 as other methods such as Reversible Jump Markov Chain Monte Carlo
 (RJMCMC) ([Green 1995](#ref-Green.1995)) which move between model
 dimensions can have difficulty moving between models and require careful
@@ -210,9 +210,9 @@ df_true <- df_true %>% mutate(status = ifelse(time >=10, 0, status))
 add_km(mod_comp$plot_Surv_all, df_true, colour = "black")
 ```
 
-<img src="C:/Users/phili/OneDrive/PhD/R packages/PiecewiseChangepoint/PiecewiseChangepoint/Examples/plt_Survival.png" width="2671" />
-\#\# Ensuring consistency when evalutating the model on different
-timescales
+<img src="Examples/plt_Survival.png" width="2671" />
+
+## Ensuring consistency when evalutating the model on different timescales
 
 One criticism of methods which employ marginal likelihood for the
 purpose of model selection is that marginal likelihood is sensitive to
