@@ -538,9 +538,8 @@ get_Surv <- function(object, chng.num = "all", max_predict) {
 
   if (chng.num != "all") {
     if (length(which(num.changepoints == chng.num)) < 2) {
-      print("Too few simulations for this change-point model")
-      break
-    } else {
+      stop("Too few simulations for this change-point model")
+      } else {
       changepoints_eval <- chng.num
     }
   } else {
@@ -672,24 +671,24 @@ fit_surv_models <- function(df, max_predict = 10) {
   interval <- max_predict/100
   cat(" \n")
   if ("rjags" %in% rownames(installed.packages()) == FALSE) {
-    print("Need JAGS to run this function")
-    break
+    stop("Need JAGS to run this function")
+
   }
 
 
   if ("R2jags" %in% rownames(installed.packages()) == FALSE) {
-    print("Need R2jags package to run this function")
-    break
+    stop("Need R2jags package to run this function")
+
   }
 
   if ("loo" %in% rownames(installed.packages()) == FALSE) {
-    print("Need loo package to evaluate WAIC")
-    break
+    stop("Need loo package to evaluate WAIC")
+
   }
 
-  require(rjags)
-  require(R2jags)
-  require(loo)
+  require("rjags")
+  require("R2jags")
+
 
   cat(crayon::blue("Fitting parametric models with JAGS... can take several minutes \n"))
 
