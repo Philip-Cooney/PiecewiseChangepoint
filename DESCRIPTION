@@ -7,8 +7,9 @@ Authors@R: person("Philip", "Cooney", email = "phcooney@tcd.ie",
                   role = c("aut", "cre"))
 Description: An implementation of the piecewise exponential models with unknown change-points using a Bayesian framework. Also provides methods to compare against other commonly used parametric survival models.
 License: MIT + file LICENSE
-Imports: Rcpp (>= 1.0.7), flexsurv, survival,flexsurv,hesim, eha, dplyr, ggplot2, crayon, loo
+Imports: Rcpp (>= 1.0.7), flexsurv, survival,flexsurv,hesim, eha, dplyr, ggplot2, crayon, loo, magrittr
 Suggests: R2jags, rjags
+Depends: R (>= 3.5.0)
 LinkingTo: Rcpp, RcppArmadillo
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
