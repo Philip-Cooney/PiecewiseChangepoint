@@ -50,17 +50,18 @@ We see the output of this dataframe below:
     ## 229 0.022321679      1 0.022321679
     ## 197 0.023591679      1 0.023591679
 
-time\_event represents the time the event would occur at in the absence
-of censoring, while time is minimum of the censoring time and the event
-time. Status is an indicator variable if the event occured at the
-corresponding time or if it was censored. Plotting this survival
+*time\_event* represents the time the event would occur at in the
+absence of censoring, while *time* is minimum of the censoring time and
+the event time. *status* is an indicator variable if the event occurred
+at the corresponding time or if it was censored. Plotting this survival
 function we see a potential change in the hazard at around year 1.
 
 ![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 As noted in ([Bagust and Beale 2014](#ref-Bagust.2014)), constant
-hazards are linear with respect to the cumulative hazard function the
-change in hazards at approximately 1 year can be seen more clearly.
+hazards are linear with respect to the cumulative hazard function,
+therefore, the change in hazards at approximately 1 year can be seen
+more clearly in this plot.
 
 ``` r
 ggsurvplot(fit, palette = "#2E9FDF", fun = "cumhaz")
@@ -72,7 +73,6 @@ Next we fit the model noting that only the time and status columns are
 required.
 
 ``` r
-df <- df[,c("time","status")]
 Collapsing_Model <- collapsing.model(df,
                                      n.iter = 20750,
                                      burn_in = 750,
@@ -108,9 +108,11 @@ We should investigate the mixing of the chains to ensure they are
 satisfactory. The plot below indicates that is the case with jumps
 between models occurring frequently. This is an advantage of the method
 as other methods such as Reversible Jump Markov Chain Monte Carlo
-(RJMCMC) ([Green 1995](#ref-Green.1995)) which move between model
-dimensions can have difficulty moving between models and require careful
-consideration of the proposal density.
+(RJMCMC) ([Green 1995](#ref-Green.1995)) require careful consideration
+of a bijective function to move between model dimensions. Often it is
+difficult to find such an appropriate bijective function which provides
+frequent jumps between models and therefore convergence can be quite
+slow.
 
 ``` r
 chain.mixing(Collapsing_Model)
@@ -118,13 +120,14 @@ chain.mixing(Collapsing_Model)
 
 ![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
-Once the convergence has been confirmed, we may want to look at a plot
-of the survivor function. In health economics we are typically
-interested in long term survival of various parameter models. In this
-situation we want a plot of the first 5 years which we can do using the
-*max\_predict* argument. The red lines show the individual posterior
-simulations and are a natural representation of the parameter
-uncertainty.
+Once we are satisfied that there is good mixing and that we have run the
+model for long enough (20,000 simulations over 2 chains should be more
+than enough), we may want to look at a plot of the survivor function. In
+health economics we are typically interested in long term survival of
+our parametric models. In this situation we want a plot of the first 5
+years which we can do using the *max\_predict* argument. The red lines
+show the individual posterior simulations and are a natural
+representation of the parameter uncertainty.
 
 ``` r
 plot(Collapsing_Model, max_predict = 5)
@@ -145,9 +148,11 @@ plot(Collapsing_Model, type = "hazard")
 ![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 By default the plot methods described above use all the posterior
-simulations. If for example we were only interested in the 2
-change-point model we can specify this using the *chng.num* argument.
-The green points indicate the mean location of the change-points.
+simulations. If for example, we were only interested in the 2
+change-point model, we can specify this using the *chng.num* argument.
+The green points indicate the mean location of the change-points. When
+plotting “all” of the simulations there is no sensible mean location of
+the change-points as there are different numbers of change-points.
 
 ``` r
 plot(Collapsing_Model, max_predict = 5, chng.num = 2)
@@ -219,7 +224,7 @@ purpose of model selection is that marginal likelihood is sensitive to
 the
 [prior](https://www.youtube.com/watch?v=kisFIbkfDUs&ab_channel=BenLambert).
 This is distinct from the posterior distribution of the parameters which
-in the presence of sufficient data will dominate (a suitably vague)
+in the presence of sufficient data will dominate a (suitably vague)
 prior.
 
 The prior on the hazard is *λ* ∼ 𝒢(*α*, *β*) where *α*, *β* are the
@@ -238,8 +243,8 @@ need the gamma prior for *β* to be scaled by 1/365 (i.e. the number of
 days in a year). Owing to the properties of the gamma distribution the
 equivalent scaled distribution is a 𝒢(1, 1/365). When this prior is used
 we obtain very similar (differences due to Monte-Carlo error) posterior
-change-point probabilities. Although we note that we *ξ* (and *α*)
-should be set to 1 we note from the below plot that a 𝒢(1, 1)
+change-point probabilities. Although we suggest that *ξ* (and *α*)
+should be set to 1 we see from the below plot that a 𝒢(1, 1)
 distribution is similar to 𝒢(2, 2) distribution. Both have an expected
 value of 1 with variances 1 and 0.5 respectively and will give very
 similar inferences. However, it should be clear that both distributions
