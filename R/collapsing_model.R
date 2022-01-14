@@ -14,7 +14,7 @@
 #' @param alpha.hyper value of shape parameter for the gamma prior for the hazard (\eqn{\lambda}). Should always be set to 1. As noted there is a gamma prior on \eqn{\lambda} but also a gamma prior (hyperprior) on the rate parameter of this prior.
 #' @param beta.hyper1 first hyperprior (shape) for the rate parameter of the gamma prior for \eqn{\lambda}. Should be set to 1.
 #' @param beta.hyper2 first hyperprior (rate) for the rate parameter of the gamma prior for \eqn{\lambda}. To insure that inferences are the same when different timescales (i.e. months vs years) are chosen, this hyperprior must be changed. If the analysis is in years this value should be equal to 1, if in months it should be 1/12 and if in days should be 1/365.
-#'
+#' @param MLE If FALSE (default) consider a Geometric Prior, if TRUE consider Uniform Prior.
 #' @return A list of the class "changepoint" with the following items:
 #'  \itemize{
 #'   \item \strong{k.stacked}: Matrix of change-point indices. Number refers to the number of events.
@@ -48,7 +48,8 @@ collapsing.model <- function(df,
                              lambda.prior = 1,
                              alpha.hyper = 1,
                              beta.hyper1 = 1,
-                             beta.hyper2 = 1
+                             beta.hyper2 = 1,
+                             MLE = FALSE
 ) {
   df <- df[order(df$time), ]
   m <- n.iter
@@ -57,7 +58,7 @@ collapsing.model <- function(df,
   time_diffs <- df_recast(df)
   n <- nrow(time_diffs)
   # Depreciated MLE should always be false
-  MLE <- FALSE
+
 
   changepoint <- k <- array(NA, dim = c(m, max.num.breaks, n.chains))
   beta_array <- array(NA, dim = c(m, 1, n.chains))

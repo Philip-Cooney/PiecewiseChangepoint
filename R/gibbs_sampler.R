@@ -295,7 +295,7 @@ gibbs.sampler <- function(df,
                           n.thin = 1,
                           alpha.hyper = 1, #Hyperparameter for Marginal Likelihood
                           beta.hyper = 1, #Hyperparameter for Marginal Likelihood
-                          MLE = FALSE #If TRUE, considers inferences without discrete prior, not advised
+                          MLE = FALSE #If TRUE, considers on Uniform Prior
                           ){
 
   df <- df[order(df$time),]
@@ -331,7 +331,7 @@ gibbs.sampler <- function(df,
 
   for(c in 1:n.chains){
     #print(paste0("Chain Number ", c))
-    pb <- progress_bar$new(total = m)
+    #pb <- progress_bar$new(total = m)
     #Create vectors to store the changepoints and lambdas
     k_temp <- array(NA, dim = c(m, num.breaks))
 
