@@ -315,18 +315,18 @@ index.loc <- function(index, k.slice) {
 #' plot(Collapsing_Model, add.post = F)
 #' plot(Collapsing_Model, type = "hazard")}
 
-plot.changepoint <- function(object, type = "survival", chng.num = "all", add.km = T, max_predict = 10,  add.post = T, ...) {
+plot.changepoint <- function(object, type = "survival", chng.num = "all", add.km = T, max_predict = 10,  add.post = T, alpha.pos = NULL, ...) {
   if (type == "survival") {
     St <- get_Surv(object, chng.num = chng.num, max_predict = max_predict)
-    return(plot.Survival(St, add.km = add.km, add.post = add.post))
+    return(plot.Survival(St, add.km = add.km, add.post = add.post, alpha.pos = alpha.pos))
   }
 
   if (type == "hazard") {
-    return(plot.hazard(object, chng.num = chng.num))
+    return(plot.hazard(object, chng.num = chng.num, alpha.pos = alpha.pos))
   }
 }
 
-plot.Survival <- function(St, max.num.post = 500, add.km, add.post, env = parent.frame()) {
+plot.Survival <- function(St, max.num.post = 500, add.km, add.post,alpha.pos, env = parent.frame()) {
   nSims <- ncol(St)
   time <- as.numeric(rownames(St))
 
@@ -363,10 +363,15 @@ plot.Survival <- function(St, max.num.post = 500, add.km, add.post, env = parent
     theme_classic()
 
   if (add.post == T) {
+    if(is.null(alpha.pos)){
+    alpha.pos <- 0.025  
+    }else{
+    alpha.pos <- alpha.pos 
+    }
     plot_Surv <- plot_Surv +
       geom_line(data = mod_quantile_df, aes(x = time, y = lower), linetype = "dashed", size = 1, inherit.aes = F, colour = "grey") +
       geom_line(data = mod_quantile_df, aes(x = time, y = upper), linetype = "dashed", size = 1, inherit.aes = F, colour = "grey") +
-      geom_line(size = 0.1, alpha = 0.025, colour = "red")
+      geom_line(size = 0.1, alpha =  alpha.pos, colour = "red")
   }
 
 
@@ -404,7 +409,7 @@ plot.Survival <- function(St, max.num.post = 500, add.km, add.post, env = parent
   return(plot_Surv)
 }
 
-plot.hazard <- function(object, chng.num = "all", max.num.post = 500, ...) {
+plot.hazard <- function(object, chng.num = "all", max.num.post = 500, alpha.pos = NULL, ...) {
   k <- object$k.stacked
   changepoint <- object$changepoint
   lambda <- object$lambda
@@ -481,8 +486,14 @@ plot.hazard <- function(object, chng.num = "all", max.num.post = 500, ...) {
     df.plot.final <- dplyr::filter(df.hazard, id %in% post_id)
   }
 
+   if(is.null(alpha.pos)){
+    alpha.pos <- 0.025  
+    }else{
+    alpha.pos <- alpha.pos 
+    }
+  
   plot_haz <- ggplot(df.plot.final, aes(timepoints, hazards)) +
-    geom_step(aes(group = id), linetype = "dashed", alpha = 0.05, colour = "red") +
+    geom_step(aes(group = id), linetype = "dashed", alpha = alpha.pos, colour = "red") +
     geom_line(data = lambda_res_final_df, aes(time, X50.), size = 1.5) +
     geom_line(data = lambda_res_final_df, aes(time, X5.), linetype = "dotted", size = 1.25) +
     geom_line(data = lambda_res_final_df, aes(time, X95.), linetype = "dotted", size = 1.25) +
