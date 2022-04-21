@@ -1,64 +1,3 @@
-inits_list <- function(mod, n.chains = 2){ 
-  
-  list_return <- list()
- for(i in 1:n.chains){
-  list_inits <- list()
-  list_inits$t <-  tinits1 + runif(1)
-  
-  if(mod == "exp"){
-    list_inits$lambda = 1/mean(df$time)
-  }
-  
-  if(mod == "weibull"){
-    
-    lt <- log(df$time[df$time > 0])
-    shape <- 1.64/var(lt)
-    scale <- exp(mean(lt) + 0.572)
-    
-    list_inits$v <- shape
-    list_inits$lambda <- scale^{-shape}	
-  }
-  
-  if(mod == "gompertz"){
-    list_inits$a = 0.001
-    list_inits$b = 1/mean(df$time)
-  }
-  
-  if(mod == "lnorm"){
-    lt <- log(df$time[df$time > 0])
-    list_inits$mu <- mean(lt)
-    list_inits$sd <- sd(lt)
-  }
-  
-  if(mod == "llogis"){
-    lt <- log(df$time[df$time > 0])
-    list_inits$mu  <- mean(lt)
-    list_inits$scale <- 3*var(lt)/(pi^2)
-    list_inits$t.log <- log(tinits1 + runif(1))
-  }
-  
-  if(mod == "gengamma"){
-    list_inits$r <- 1
-    list_inits$lambda <- 1/mean(df$time)
-    list_inits$b <- 1
-    
-	}
-	
-	if(mod == "gamma"){
-	
-	 list_inits$lambda = sum(df$time)
-	 list_inits$r = sum(df$status)
-    
-	}
-	
-	
-	
-   list_return[[i]] <- list_inits
-  }
-  
-  return(list_return)
-  
-}
 
 
 
@@ -847,6 +786,72 @@ fit_surv_models <- function(df, max_predict = 10) {
   require("rjags")
   require("R2jags")
 
+ # Inits function
+	
+	inits_list <- function(mod, n.chains = 2){ 
+  
+  list_return <- list()
+ for(i in 1:n.chains){
+  list_inits <- list()
+  list_inits$t <-  tinits1 + runif(1)
+  
+  if(mod == "exp"){
+    list_inits$lambda = 1/mean(df$time)
+  }
+  
+  if(mod == "weibull"){
+    
+    lt <- log(df$time[df$time > 0])
+    shape <- 1.64/var(lt)
+    scale <- exp(mean(lt) + 0.572)
+    
+    list_inits$v <- shape
+    list_inits$lambda <- scale^{-shape}	
+  }
+  
+  if(mod == "gompertz"){
+    list_inits$a = 0.001
+    list_inits$b = 1/mean(df$time)
+  }
+  
+  if(mod == "lnorm"){
+    lt <- log(df$time[df$time > 0])
+    list_inits$mu <- mean(lt)
+    list_inits$sd <- sd(lt)
+  }
+  
+  if(mod == "llogis"){
+    lt <- log(df$time[df$time > 0])
+    list_inits$mu  <- mean(lt)
+    list_inits$scale <- 3*var(lt)/(pi^2)
+    list_inits$t.log <- log(tinits1 + runif(1))
+  }
+  
+  if(mod == "gengamma"){
+    list_inits$r <- 1
+    list_inits$lambda <- 1/mean(df$time)
+    list_inits$b <- 1
+    
+	}
+	
+	if(mod == "gamma"){
+	
+	 list_inits$lambda = sum(df$time)
+	 list_inits$r = sum(df$status)
+    
+	}
+	
+	
+	
+   list_return[[i]] <- list_inits
+  }
+  
+  return(list_return)
+  
+}
+
+	
+	
 
   cat(crayon::blue("Fitting parametric models with JAGS... can take several minutes \n"))
 
