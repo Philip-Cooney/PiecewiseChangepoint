@@ -1,3 +1,87 @@
+rpwexp =function(n,lam, s){
+  #Function provided by Andrew Chappel
+  s <- c(0,s,Inf)
+  L=length(s)-2
+  ##Generate Uniform random variables for inverting the CDF
+  U=runif(n,0,1)  
+  ##This stores the actual values simulated
+  X=U
+  cum1=s[2]*lam[1] ##First interval contribution
+  
+  for(i in 1:n){
+    if(U[i]<(1-exp(-cum1))){
+      ##Just invert the cdf
+      X[i]=-log(1-U[i])/lam[1]
+      
+    }else{
+      X[i]=-(log(1-U[i])+cum1-lam[2]*s[2])/(lam[2])
+      
+    }
+  }
+  X=pmin(X,s[length(s)])
+  return(X)
+  
+}
+
+
+SurvSplit <- function (Y, cuts){
+  #Taken from eha
+    if (NCOL(Y) == 2) 
+        Y <- cbind(rep(0, NROW(Y)), Y)
+    indat <- cbind(Y, 1:NROW(Y), rep(-1, NROW(Y)))
+    colnames(indat) <- c("enter", "exit", "event", "idx", "ivl")
+    n <- length(cuts)
+    cuts <- sort(cuts)
+    if ((cuts[1] <= 0) || (cuts[n] == Inf)) 
+        stop("'cuts' must be positive and finite.")
+    cuts <- c(0, cuts, Inf)
+    n <- n + 1
+    out <- list()
+    indat <- as.data.frame(indat)
+    for (i in 1:n) {
+        out[[i]] <- age.window(indat, cuts[i:(i + 1)])
+        out[[i]]$ivl <- i
+    }
+    Y <- do.call(rbind, out)
+    colnames(Y) <- colnames(indat)
+    list(Y = Y[, 1:3], ivl = Y[, 5], idx = Y[, 4])
+}
+
+age.window <- function (dat, window, surv = c("enter", "exit", "event")){
+  #Taken from eha
+    if (!is.data.frame(dat)) 
+        stop("dat must be a data frame")
+    if (length(surv) != 3) 
+        stop("surv must have length 3")
+    fixed.names <- names(dat)
+    surv.indices <- match(surv, fixed.names)
+    if (length(which(is.na(surv.indices)))) {
+        x <- which(is.na(surv.indices))
+        stop(paste(surv[x], " is not a name in the data frame."))
+    }
+    enter <- dat[[surv.indices[1]]]
+    exit <- dat[[surv.indices[2]]]
+    event <- dat[[surv.indices[3]]]
+    who <- (exit > window[1]) & (enter < window[2])
+    if (sum(who) > 0.5) {
+        enter <- enter[who]
+        exit <- exit[who]
+        event <- event[who]
+        event[exit > window[2]] <- 0
+        exit[exit > window[2]] <- window[2]
+        enter[enter < window[1]] <- window[1]
+        dat <- dat[who, ]
+        dat[surv.indices[1]] <- enter
+        dat[surv.indices[2]] <- exit
+        dat[surv.indices[3]] <- event
+    }
+    else {
+        dat <- NULL
+    }
+    dat
+}
+
+
 df_recast <- function(df) {
 
   # Takes the data and reformats it into a time between each event format
@@ -102,7 +186,6 @@ chain.mixing <- function(object) {
 #'
 #' @return a dataframe with three columns, the time of the events (time_event), time which is the minimum of the cenorsing time and event time. status is an indicator which is 0 censored observation, or 1 if event.
 #' @export
-#' @importFrom hesim rpwexp
 #' @importFrom dplyr mutate
 #' @examples
 #' set.seed(123)
@@ -117,18 +200,18 @@ chain.mixing <- function(object) {
 
 gen_piece_df <- function(n_obs, n_events_req, num.breaks, rate, t_change, max_time = Inf) {
   n_cens_req <- n_obs - n_events_req
-  ratemat <- matrix(rep(rate, n_obs / 2),
-    nrow = n_obs,
-    ncol = num.breaks + 1, byrow = TRUE
-  )
+  #ratemat <- matrix(rep(rate, n_obs / 2),
+  #  nrow = n_obs,
+  #  ncol = num.breaks + 1, byrow = TRUE
+  #)
 
   if (n_cens_req > 0) {
     if (num.breaks == 0) {
       samp_cens <- rexp(n_cens_req * 2, rate)
       samp <- rexp(n_obs, rate)
     } else {
-      samp_cens <- rpwexp(n_cens_req * 2, ratemat, c(0, t_change)) # Assume that on average half the observations will be censors
-      samp <- rpwexp(n_obs, ratemat, c(0, t_change))
+      samp_cens <- rpwexp(n_cens_req * 2, rate, t_change) # Assume that on average half the observations will be censors
+      samp <- rpwexp(n_obs, ratemat,  t_change)
     }
     samp_cens <- sapply(samp_cens, FUN = min, max_time)
     samp_cens <- sample(c(samp_cens, rep(max_time, n_obs - n_cens_req * 2))) # Randomized vector
@@ -141,7 +224,7 @@ gen_piece_df <- function(n_obs, n_events_req, num.breaks, rate, t_change, max_ti
     if (num.breaks == 0) {
       samp <- rexp(n_obs, rate)
     } else {
-      samp <- rpwexp(n_obs, ratemat, c(0, t_change))
+      samp <- rpwexp(n_obs, rate,  t_change)
     }
     df <- data.frame(time_event = samp)
     df <- df %>% mutate(
@@ -421,7 +504,7 @@ ind.expo <- function(time, status, lambda) {
 piecewise_loglik.indiv <- function(df, changepoint, lambda = NULL) {
   df$enter <- 0
   surv.object <- with(df, Surv(enter, time, status))
-  split <- eha::SurvSplit(surv.object, changepoint)
+  split <- SurvSplit(surv.object, changepoint)
   n.ivl <- length(changepoint) + 1
 
   T <- split$Y$exit - split$Y$enter
