@@ -1,3 +1,67 @@
+inits_list <- function(mod, n.chains = 2){ 
+  
+  list_return <- list()
+ for(i in 1:n.chains){
+  list_inits <- list()
+  list_inits$t <-  tinits1 + runif(1)
+  
+  if(mod == "exp"){
+    list_inits$lambda = 1/mean(df$time)
+  }
+  
+  if(mod == "weibull"){
+    
+    lt <- log(df$time[df$time > 0])
+    shape <- 1.64/var(lt)
+    scale <- exp(mean(lt) + 0.572)
+    
+    list_inits$v <- shape
+    list_inits$lambda <- scale^{-shape}	
+  }
+  
+  if(mod == "gompertz"){
+    list_inits$a = 0.001
+    list_inits$b = 1/mean(df$time)
+  }
+  
+  if(mod == "lnorm"){
+    lt <- log(df$time[df$time > 0])
+    list_inits$mu <- mean(lt)
+    list_inits$sd <- sd(lt)
+  }
+  
+  if(mod == "llogis"){
+    lt <- log(df$time[df$time > 0])
+    list_inits$mu  <- mean(lt)
+    list_inits$scale <- 3*var(lt)/(pi^2)
+    list_inits$t.log <- log(tinits1 + runif(1))
+  }
+  
+  if(mod == "gengamma"){
+    list_inits$r <- 1
+    list_inits$lambda <- 1/mean(df$time)
+    list_inits$b <- 1
+    
+	}
+	
+	if(mod == "gamma"){
+	
+	 list_inits$lambda = sum(df$time)
+	 list_inits$r = sum(df$status)
+    
+	}
+	
+	
+	
+   list_return[[i]] <- list_inits
+  }
+  
+  return(list_return)
+  
+}
+
+
+
 rpwexp =function(n,lam, s){
   #Function provided by Andrew Chappel
   s <- c(0,s,Inf)
@@ -800,7 +864,7 @@ fit_surv_models <- function(df, max_predict = 10) {
   for(i in 1:length(t_pred)){
     St_pred[i] <- 1- pexp(t_pred[i],lambda)
   }
-  lambda ~ dgamma(1,1)
+  lambda ~ dgamma(0.001,0.001)
 
 }"
 
@@ -818,8 +882,8 @@ invLik[i] <- 1/Like[i]
 for(i in 1:length(t_pred)){
 St_pred[i] <- 1- pweib(t_pred[i],v,lambda)
 }
-lambda ~ dgamma(1,1)
-v ~ dgamma(1,1)
+lambda ~ dgamma(0.001,0.001)
+v ~ dgamma(0.001,0.001)
 }"
 
   # Weibull Model
@@ -836,8 +900,8 @@ invLik[i] <- 1/Like[i]
     St_pred[i] <- 1- pgamma(t_pred[i],shape,lambda)
   }
 
-lambda ~ dgamma(1,1)
-shape ~ dgamma(1,1)
+lambda ~ dgamma(0.001,0.001)
+shape ~dgamma(0.001,0.001)
 }"
 
   # Log-Normal Model
@@ -852,8 +916,8 @@ invLik[i] <- 1/Like[i]
  for(i in 1:length(t_pred)){
     St_pred[i] <- 1- plnorm(t_pred[i],mu,tau)
   }
-mu ~ dnorm(0,0.1)
-sd ~ dunif(0,5)
+mu ~ dnorm(0,0.001)
+sd ~ dunif(0,10)
 tau <- pow(sd,-2)
 }"
 
@@ -873,8 +937,8 @@ invLik[i] <- 1/Like[i]
     St_pred[i] <- 1/(1 + pow(t_pred[i]/beta, alpha))
   }
 
-mu ~ dnorm(0,0.1)
-scale ~ dgamma(1,1)
+mu ~ dnorm(0,0.001)
+scale ~ dgamma(0.001,0.001)
 tau <- pow(scale,-1) # Inverse of scale which is beta on the log-logistic dist
 beta <- exp(mu)
 alpha <- tau
@@ -910,8 +974,8 @@ for(i in 1:length(t_pred)){
   }
 
 
-a ~ dnorm(0,0.01)
-b ~ dunif(0,5)
+a ~ dnorm(0,0.001)
+b ~ dunif(0,10)
 }"
 
   # Generalized Gamma Model
@@ -928,9 +992,9 @@ invLik[i] <- 1/Like[i]
  for(i in 1:length(t_pred)){
     St_pred[i] <- 1- pgen.gamma(t_pred[i],r,lambda,b)
   }
-r ~ dgamma(1,1)
-lambda ~ dgamma(1,1)
-b ~ dgamma(1,1)
+r ~ dgamma(0.001,0.001)
+lambda ~ dgamma(0.001,0.001)
+b ~ dgamma(0.001,0.001)
 }"
 
 
@@ -950,15 +1014,15 @@ b ~ dgamma(1,1)
   df_jags$t.cen <- df_jags$time + df_jags$status
 
 
-  modelinits <- list(
-    list(t = tinits1),
-    list(t = tinits2)
-  )
+  #modelinits <- list(
+  #  list(t = tinits1),
+  # list(t = tinits2)
+  #)
 
-  logmodelinits <- list(
-    list(t.log = log(tinits1)),
-    list(t.log = log(tinits2))
-  )
+  #logmodelinits <- list(
+  #  list(t.log = log(tinits1)),
+  #  list(t.log = log(tinits2))
+  #)
 
   data_jags <- list(
     N = nrow(df_jags),
@@ -989,14 +1053,15 @@ b ~ dgamma(1,1)
 
   data_gomp$t_pred <- data_jags$t_pred
   # Fit the Models
+  n.chains = 2
 
   cat(crayon::blue("Exponential Model \n"))
 
   expo.mod <- R2jags::jags(
     model.file = textConnection(expo),
     data = data_jags,
-    inits = modelinits,
-    n.chains = 2,
+    inits = inits_list("exp", n.chains),
+    n.chains = n.chains,
     parameters.to.save = c("Like", "lambda", "invLik", "St_pred")
   )
 
@@ -1011,8 +1076,8 @@ b ~ dgamma(1,1)
   weibull.mod <- R2jags::jags(
     model.file = textConnection(weibull),
     data = data_jags,
-    inits = modelinits,
-    n.chains = 2,
+    inits = inits_list("weibull", n.chains),
+    n.chains = n.chains,
     parameters.to.save = c("lambda", "v", "Like", "invLik", "St_pred")
   )
 
@@ -1020,8 +1085,8 @@ b ~ dgamma(1,1)
   gamma.mod <- R2jags::jags(
     model.file = textConnection(gamma.jags),
     data = data_jags,
-    inits = modelinits,
-    n.chains = 2,
+    inits = inits_list("gamma", n.chains),
+    n.chains = n.chains,
     parameters.to.save = c("lambda", "shape", "Like", "invLik", "St_pred")
   )
 
@@ -1029,8 +1094,8 @@ b ~ dgamma(1,1)
   lnorm.mod <- R2jags::jags(
     model.file = textConnection(lnorm.jags),
     data = data_jags,
-    inits = modelinits,
-    n.chains = 2,
+    inits = inits_list("lnorm", n.chains),
+    n.chains = n.chains,
     parameters.to.save = c("mu", "sd", "Like", "invLik", "St_pred")
   )
 
@@ -1038,8 +1103,8 @@ b ~ dgamma(1,1)
   llogis.mod <- R2jags::jags(
     model.file = textConnection(llogis.jags),
     data = data_jags_llogis,
-    inits = logmodelinits,
-    n.chains = 2,
+    inits = inits_list("llogis", n.chains),
+    n.chains = n.chains,
     parameters.to.save = c("alpha", "beta", "Like", "invLik", "St_pred")
   )
 
@@ -1047,8 +1112,8 @@ b ~ dgamma(1,1)
   gompertz.mod <- R2jags::jags(
     model.file = textConnection(gompertz.jags),
     data = data_gomp,
-    inits = list(list(a = -1, b = 1 / mean(df$time)), list(a = 1, b = 1 / mean(df$time))),
-    n.chains = 2,
+    inits = inits_list("gompertz", n.chains),
+    n.chains = n.chains,
     parameters.to.save = c("a", "b", "Like", "invLik", "St_pred")
   )
 
@@ -1056,8 +1121,8 @@ b ~ dgamma(1,1)
   gen.gamma.mod <- R2jags::jags(
     model.file = textConnection(gen.gamma.jags),
     data = data_jags,
-    inits = modelinits,
-    n.chains = 2,
+    inits = inits_list("gengamma", n.chains),
+    n.chains = n.chains,
     parameters.to.save = c("r", "lambda", "b", "Like", "invLik", "St_pred")
   )
 
