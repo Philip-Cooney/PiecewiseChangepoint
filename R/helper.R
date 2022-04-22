@@ -6,36 +6,36 @@ rpwexp =function(n,lam, s){
   s <- c(0,s,Inf)
   L=length(s)-2
   ##Generate Uniform random variables for inverting the CDF
-  U=runif(n,0,1)  
+  U=runif(n,0,1)
   ##This stores the actual values simulated
   X=U
   cum1=s[2]*lam[1] ##First interval contribution
-  
+
   for(i in 1:n){
     if(U[i]<(1-exp(-cum1))){
       ##Just invert the cdf
       X[i]=-log(1-U[i])/lam[1]
-      
+
     }else{
       X[i]=-(log(1-U[i])+cum1-lam[2]*s[2])/(lam[2])
-      
+
     }
   }
   X=pmin(X,s[length(s)])
   return(X)
-  
+
 }
 
 
 SurvSplit <- function (Y, cuts){
   #Taken from eha
-    if (NCOL(Y) == 2) 
+    if (NCOL(Y) == 2)
         Y <- cbind(rep(0, NROW(Y)), Y)
     indat <- cbind(Y, 1:NROW(Y), rep(-1, NROW(Y)))
     colnames(indat) <- c("enter", "exit", "event", "idx", "ivl")
     n <- length(cuts)
     cuts <- sort(cuts)
-    if ((cuts[1] <= 0) || (cuts[n] == Inf)) 
+    if ((cuts[1] <= 0) || (cuts[n] == Inf))
         stop("'cuts' must be positive and finite.")
     cuts <- c(0, cuts, Inf)
     n <- n + 1
@@ -52,9 +52,9 @@ SurvSplit <- function (Y, cuts){
 
 age.window <- function (dat, window, surv = c("enter", "exit", "event")){
   #Taken from eha
-    if (!is.data.frame(dat)) 
+    if (!is.data.frame(dat))
         stop("dat must be a data frame")
-    if (length(surv) != 3) 
+    if (length(surv) != 3)
         stop("surv must have length 3")
     fixed.names <- names(dat)
     surv.indices <- match(surv, fixed.names)
@@ -367,9 +367,9 @@ plot.Survival <- function(St, max.num.post = 500, add.km, add.post,alpha.pos, en
 
   if (add.post == T) {
     if(is.null(alpha.pos)){
-    alpha.pos <- 0.025  
+    alpha.pos <- 0.025
     }else{
-    alpha.pos <- alpha.pos 
+    alpha.pos <- alpha.pos
     }
     plot_Surv <- plot_Surv +
       geom_line(data = mod_quantile_df, aes(x = time, y = lower), linetype = "dashed", size = 1, inherit.aes = F, colour = "grey") +
@@ -490,11 +490,11 @@ plot.hazard <- function(object, chng.num = "all", max.num.post = 500, alpha.pos 
   }
 
    if(is.null(alpha.pos)){
-    alpha.pos <- 0.025  
+    alpha.pos <- 0.025
     }else{
-    alpha.pos <- alpha.pos 
+    alpha.pos <- alpha.pos
     }
-  
+
   plot_haz <- ggplot(df.plot.final, aes(timepoints, hazards)) +
     geom_step(aes(group = id), linetype = "dashed", alpha = alpha.pos, colour = "red") +
     geom_line(data = lambda_res_final_df, aes(time, X50.), size = 1.5) +
@@ -764,7 +764,26 @@ print.changepoint <- function(object, chng.num = NULL, digits = min(3L, getOptio
 #' @examples \dontrun{
 #' mod.comp.jags <-fit_surv_models(df)
 #' }
-fit_surv_models <- function(df, max_predict = 10) {
+fit_surv_models <- function(df, max_predict = 10,
+                            n.iter.jags = 2000,
+                            n.thin.jags = NULL,
+                            n.burnin.jags = NULL) {
+
+  if(is.null(n.burnin.jags)){
+
+    n.burnin.jags=floor(n.iter.jags/2)
+
+  }
+
+  if(is.null(n.thin.jags)){
+
+    n.thin.jags <- max(1, floor((n.iter.jags - n.burnin.jags) / 1000))
+
+  }
+
+
+
+
   interval <- max_predict/100
   cat(" \n")
   if ("rjags" %in% rownames(installed.packages()) == FALSE) {
@@ -787,71 +806,74 @@ fit_surv_models <- function(df, max_predict = 10) {
   require("R2jags")
 
  # Inits function
-	
-	inits_list <- function(mod, n.chains = 2){ 
-  
+
+	inits_list <- function(mod, n.chains = 2){
+
   list_return <- list()
  for(i in 1:n.chains){
   list_inits <- list()
   list_inits$t <-  tinits1 + runif(1)
-  
+
   if(mod == "exp"){
     list_inits$lambda = 1/mean(df$time)
   }
-  
+
   if(mod == "weibull"){
-    
+
     lt <- log(df$time[df$time > 0])
     shape <- 1.64/var(lt)
     scale <- exp(mean(lt) + 0.572)
-    
+
     list_inits$v <- shape
-    list_inits$lambda <- scale^{-shape}	
+    list_inits$lambda <- scale^{-shape}
   }
-  
+
   if(mod == "gompertz"){
     list_inits$a = 0.001
     list_inits$b = 1/mean(df$time)
+
+    list_inits <- list_inits[names(list_inits) %!in% c("t")]
   }
-  
+
   if(mod == "lnorm"){
     lt <- log(df$time[df$time > 0])
     list_inits$mu <- mean(lt)
     list_inits$sd <- sd(lt)
   }
-  
+
   if(mod == "llogis"){
     lt <- log(df$time[df$time > 0])
     list_inits$mu  <- mean(lt)
     list_inits$scale <- 3*var(lt)/(pi^2)
     list_inits$t.log <- log(tinits1 + runif(1))
+    list_inits <- list_inits[names(list_inits) %!in% c("t")]
+
   }
-  
+
   if(mod == "gengamma"){
     list_inits$r <- 1
     list_inits$lambda <- 1/mean(df$time)
     list_inits$b <- 1
-    
+
 	}
-	
+
 	if(mod == "gamma"){
-	
+
 	 list_inits$lambda = sum(df$time)
-	 list_inits$r = sum(df$status)
-    
+	 list_inits$shape = sum(df$status)
+
 	}
-	
-	
-	
+
+
+
    list_return[[i]] <- list_inits
   }
-  
+
   return(list_return)
-  
+
 }
 
-	
-	
+
 
   cat(crayon::blue("Fitting parametric models with JAGS... can take several minutes \n"))
 
@@ -863,7 +885,7 @@ fit_surv_models <- function(df, max_predict = 10) {
     is.censored[i]~dinterval(t[i],t.cen[i])
     t[i] ~ dexp(lambda)
     Like[i] <- ifelse(is.censored[i], 1- pexp(t.cen[i],lambda), dexp(t[i], lambda))
-    invLik[i] <- 1/Like[i]
+    #invLik[i] <- 1/Like[i] Unstable for some datasets (Will calculate outside JAGS)
 
   }
   for(i in 1:length(t_pred)){
@@ -878,11 +900,10 @@ fit_surv_models <- function(df, max_predict = 10) {
 
   weibull <- "model{
   for(i in 1:N){
-is.censored[i]~dinterval(t[i],t.cen[i])
-t[i] ~ dweib(v,lambda)
-Like[i] <- ifelse(is.censored[i], 1- pweib(t.cen[i],v,lambda), dweib(t[i],v, lambda))
-invLik[i] <- 1/Like[i]
-
+    is.censored[i]~dinterval(t[i],t.cen[i])
+    t[i] ~ dweib(v,lambda)
+    Like[i] <- ifelse(is.censored[i], 1- pweib(t.cen[i],v,lambda), dweib(t[i],v, lambda))
+    #invLik[i] <- 1/Like[i] Unstable for some datasets (Will calculate outside JAGS)
   }
 for(i in 1:length(t_pred)){
 St_pred[i] <- 1- pweib(t_pred[i],v,lambda)
@@ -896,10 +917,10 @@ v ~ dgamma(0.001,0.001)
 
   gamma.jags <- "model{
   for(i in 1:N){
-is.censored[i]~dinterval(t[i],t.cen[i])
-t[i] ~ dgamma(shape,lambda)
-Like[i] <- ifelse(is.censored[i], 1- pgamma(t.cen[i],shape,lambda), dgamma(t[i],shape, lambda))
-invLik[i] <- 1/Like[i]
+    is.censored[i]~dinterval(t[i],t.cen[i])
+    t[i] ~ dgamma(shape,lambda)
+    Like[i] <- ifelse(is.censored[i], 1- pgamma(t.cen[i],shape,lambda), dgamma(t[i],shape, lambda))
+   #invLik[i] <- 1/Like[i] Unstable for some datasets (Will calculate outside JAGS)
   }
  for(i in 1:length(t_pred)){
     St_pred[i] <- 1- pgamma(t_pred[i],shape,lambda)
@@ -913,10 +934,10 @@ shape ~dgamma(0.001,0.001)
 
   lnorm.jags <- "model{
   for(i in 1:N){
-is.censored[i]~dinterval(t[i],t.cen[i])
-t[i] ~ dlnorm(mu,tau)
-Like[i] <- ifelse(is.censored[i], 1- plnorm(t.cen[i],mu,tau), dlnorm(t[i],mu, tau))
-invLik[i] <- 1/Like[i]
+    is.censored[i]~dinterval(t[i],t.cen[i])
+    t[i] ~ dlnorm(mu,tau)
+    Like[i] <- ifelse(is.censored[i], 1- plnorm(t.cen[i],mu,tau), dlnorm(t[i],mu, tau))
+   #invLik[i] <- 1/Like[i] Unstable for some datasets (Will calculate outside JAGS)
   }
  for(i in 1:length(t_pred)){
     St_pred[i] <- 1- plnorm(t_pred[i],mu,tau)
@@ -931,13 +952,13 @@ tau <- pow(sd,-2)
   llogis.jags <- "
 model{
 for(i in 1:N){
-is.censored[i]~dinterval(t.log[i],t.cen.log[i])
-t.log[i] ~ dlogis(mu,tau)
-Like[i] <- ifelse(is.censored[i], 1/(1 + pow(exp(t.cen.log[i])/beta, alpha)),
+    is.censored[i]~dinterval(t.log[i],t.cen.log[i])
+    t.log[i] ~ dlogis(mu,tau)
+    Like[i] <- ifelse(is.censored[i], 1/(1 + pow(exp(t.cen.log[i])/beta, alpha)),
           (alpha/beta)*pow(exp(t.log[i])/beta, alpha-1)/pow(1 + pow(exp(t.log[i])/beta,alpha),2))
-invLik[i] <- 1/Like[i]
+   #invLik[i] <- 1/Like[i] Unstable for some datasets (Will calculate outside JAGS)
 
-}
+  }
  for(i in 1:length(t_pred)){
     St_pred[i] <- 1/(1 + pow(t_pred[i]/beta, alpha))
   }
@@ -967,7 +988,7 @@ logSurv[i] <- (-b/a)*(exp(a*time[i])-1)
 
 LL[i] <- logHaz[i]+ logSurv[i]
 Like[i] <- exp(LL[i])
-invLik[i] <-pow(Like[i],-1)
+#invLik[i] <- 1/Like[i] Unstable for some datasets (Will calculate outside JAGS)
 
 
 zero[i] ~ dpois(zero.mean[i])
@@ -986,20 +1007,20 @@ b ~ dunif(0,10)
   # Generalized Gamma Model
 
   gen.gamma.jags <- "model{
-  for(i in 1:N){
-is.censored[i]~dinterval(t[i],t.cen[i])
-t[i] ~ dgen.gamma(r,lambda,b)
-Like[i] <- ifelse(is.censored[i], 1- pgen.gamma(t.cen[i],r,lambda,b), dgen.gamma(t[i],r,lambda,b))
-invLik[i] <- 1/Like[i]
+    for(i in 1:N){
+    is.censored[i]~dinterval(t[i],t.cen[i])
+    t[i] ~ dgen.gamma(r,lambda,b)
+    Like[i] <- ifelse(is.censored[i], 1- pgen.gamma(t.cen[i],r,lambda,b), dgen.gamma(t[i],r,lambda,b))
+   #invLik[i] <- 1/Like[i] Unstable for some datasets (Will calculate outside JAGS)
 
   }
 
  for(i in 1:length(t_pred)){
     St_pred[i] <- 1- pgen.gamma(t_pred[i],r,lambda,b)
   }
-r ~ dgamma(0.001,0.001)
-lambda ~ dgamma(0.001,0.001)
-b ~ dgamma(0.001,0.001)
+    r ~ dgamma(0.001,0.001)
+    lambda ~ dgamma(0.001,0.001)
+    b ~ dgamma(0.001,0.001)
 }"
 
 
@@ -1067,7 +1088,10 @@ b ~ dgamma(0.001,0.001)
     data = data_jags,
     inits = inits_list("exp", n.chains),
     n.chains = n.chains,
-    parameters.to.save = c("Like", "lambda", "invLik", "St_pred")
+    parameters.to.save = c("Like", "lambda",  "St_pred"),
+    n.iter = n.iter.jags,
+    n.thin = n.thin.jags,
+    n.burnin = n.burnin.jags
   )
 
 
@@ -1083,7 +1107,10 @@ b ~ dgamma(0.001,0.001)
     data = data_jags,
     inits = inits_list("weibull", n.chains),
     n.chains = n.chains,
-    parameters.to.save = c("lambda", "v", "Like", "invLik", "St_pred")
+    parameters.to.save = c("lambda", "v", "Like", "St_pred"),
+    n.iter = n.iter.jags,
+    n.thin = n.thin.jags,
+    n.burnin = n.burnin.jags
   )
 
   cat(crayon::blue("Gamma Model \n"))
@@ -1092,7 +1119,10 @@ b ~ dgamma(0.001,0.001)
     data = data_jags,
     inits = inits_list("gamma", n.chains),
     n.chains = n.chains,
-    parameters.to.save = c("lambda", "shape", "Like", "invLik", "St_pred")
+    parameters.to.save = c("lambda", "shape", "Like", "St_pred"),
+    n.iter = n.iter.jags,
+    n.thin = n.thin.jags,
+    n.burnin = n.burnin.jags
   )
 
   cat(crayon::blue("LogNormal Model \n"))
@@ -1101,7 +1131,10 @@ b ~ dgamma(0.001,0.001)
     data = data_jags,
     inits = inits_list("lnorm", n.chains),
     n.chains = n.chains,
-    parameters.to.save = c("mu", "sd", "Like", "invLik", "St_pred")
+    parameters.to.save = c("mu", "sd", "Like","St_pred"),
+    n.iter = n.iter.jags,
+    n.thin = n.thin.jags,
+    n.burnin = n.burnin.jags
   )
 
   cat(crayon::blue("LogLogistic Model \n"))
@@ -1110,7 +1143,10 @@ b ~ dgamma(0.001,0.001)
     data = data_jags_llogis,
     inits = inits_list("llogis", n.chains),
     n.chains = n.chains,
-    parameters.to.save = c("alpha", "beta", "Like", "invLik", "St_pred")
+    parameters.to.save = c("alpha", "beta", "Like",  "St_pred"),
+    n.iter = n.iter.jags,
+    n.thin = n.thin.jags,
+    n.burnin = n.burnin.jags
   )
 
   cat(crayon::blue("Gompertz Model \n"))
@@ -1119,7 +1155,10 @@ b ~ dgamma(0.001,0.001)
     data = data_gomp,
     inits = inits_list("gompertz", n.chains),
     n.chains = n.chains,
-    parameters.to.save = c("a", "b", "Like", "invLik", "St_pred")
+    parameters.to.save = c("a", "b", "Like",  "St_pred"),
+    n.iter = n.iter.jags,
+    n.thin = n.thin.jags,
+    n.burnin = n.burnin.jags
   )
 
   cat(crayon::blue("Generalized Gamma Model \n"))
@@ -1128,25 +1167,38 @@ b ~ dgamma(0.001,0.001)
     data = data_jags,
     inits = inits_list("gengamma", n.chains),
     n.chains = n.chains,
-    parameters.to.save = c("r", "lambda", "b", "Like", "invLik", "St_pred")
+    parameters.to.save = c("r", "lambda", "b", "Like",  "St_pred"),
+    n.iter = n.iter.jags,
+    n.thin = n.thin.jags,
+    n.burnin = n.burnin.jags
   )
 
 
-  PML.expo <- 1 / expo.mod$BUGSoutput[["summary"]][grep("invLik", rownames(expo.mod$BUGSoutput[["summary"]])), 1]
+
+  PML_calc <- function(jags.mod){
+    Like_vec <- jags.mod$BUGSoutput$sims.matrix[,grep("Like",  colnames(jags.mod$BUGSoutput$sims.matrix))]
+    #Both equal
+    #abs(1/(apply(1/Like_vec, 2, mean)) - nrow(1/Like_vec)/colSums(1/Like_vec)) < 0.001
+    return(as.numeric(nrow(1/Like_vec)/colSums(1/Like_vec)))
+  }
+
+
+
+  PML.expo <- PML_calc(expo.mod)
   PML.expo.trans <- sum(log(PML.expo)) * (-2)
   Like.sims.expo <- expo.mod$BUGSoutput[["sims.matrix"]][, grep("Like", colnames(expo.mod$BUGSoutput[["sims.matrix"]]))]
   WAIC.expo <- waic(log(Like.sims.expo))
   Surv.expo <- expo.mod$BUGSoutput[["summary"]][grep("St_pred", rownames(expo.mod$BUGSoutput[["summary"]])), 1]
 
 
-  PML.weib <- 1 / weibull.mod$BUGSoutput[["summary"]][grep("invLik", rownames(weibull.mod$BUGSoutput[["summary"]])), 1]
+  PML.weib <- PML_calc(weibull.mod)
   PML.weib.trans <- sum(log(PML.weib)) * (-2)
   Like.sims.weib <- weibull.mod$BUGSoutput[["sims.matrix"]][, grep("Like", colnames(weibull.mod$BUGSoutput[["sims.matrix"]]))]
   WAIC.weib <- waic(log(Like.sims.weib))
   Surv.weib <- weibull.mod$BUGSoutput[["summary"]][grep("St_pred", rownames(weibull.mod$BUGSoutput[["summary"]])), 1]
 
 
-  PML.gamma <- 1 / gamma.mod$BUGSoutput[["summary"]][grep("invLik", rownames(gamma.mod$BUGSoutput[["summary"]])), 1]
+  PML.gamma <- PML_calc(gamma.mod)
   PML.gamma.trans <- sum(log(PML.gamma)) * (-2)
   Like.sims.gamma <- gamma.mod$BUGSoutput[["sims.matrix"]][, grep("Like", colnames(gamma.mod$BUGSoutput[["sims.matrix"]]))]
   WAIC.gamma <- waic(log(Like.sims.gamma))
@@ -1154,28 +1206,28 @@ b ~ dgamma(0.001,0.001)
 
 
 
-  PML.lnorm <- 1 / lnorm.mod$BUGSoutput[["summary"]][grep("invLik", rownames(lnorm.mod$BUGSoutput[["summary"]])), 1]
+  PML.lnorm <-  PML_calc(lnorm.mod)
   PML.lnorm.trans <- sum(log(PML.lnorm)) * (-2)
   Like.sims.lnorm <- lnorm.mod$BUGSoutput[["sims.matrix"]][, grep("Like", colnames(lnorm.mod$BUGSoutput[["sims.matrix"]]))]
   WAIC.lnorm <- waic(log(Like.sims.lnorm))
   Surv.lnorm <- lnorm.mod$BUGSoutput[["summary"]][grep("St_pred", rownames(lnorm.mod$BUGSoutput[["summary"]])), 1]
 
 
-  PML.llogis <- 1 / llogis.mod$BUGSoutput[["summary"]][grep("invLik", rownames(llogis.mod$BUGSoutput[["summary"]])), 1]
+  PML.llogis <- PML_calc(llogis.mod)
   PML.llogis.trans <- sum(log(PML.llogis)) * (-2)
   Like.sims.llogis <- llogis.mod$BUGSoutput[["sims.matrix"]][, grep("Like", colnames(llogis.mod$BUGSoutput[["sims.matrix"]]))]
   WAIC.llogis <- waic(log(Like.sims.llogis))
   Surv.llogis <- llogis.mod$BUGSoutput[["summary"]][grep("St_pred", rownames(llogis.mod$BUGSoutput[["summary"]])), 1]
 
 
-  PML.gomp <- 1 / gompertz.mod$BUGSoutput[["summary"]][grep("invLik", rownames(gompertz.mod$BUGSoutput[["summary"]])), 1]
+  PML.gomp <- PML_calc(gompertz.mod)
   PML.gomp.trans <- sum(log(PML.gomp)) * (-2)
   Like.sims.gomp <- gompertz.mod$BUGSoutput[["sims.matrix"]][, grep("Like", colnames(gompertz.mod$BUGSoutput[["sims.matrix"]]))]
   WAIC.gomp <- waic(log(Like.sims.gomp))
   Surv.gomp <- gompertz.mod$BUGSoutput[["summary"]][grep("St_pred", rownames(gompertz.mod$BUGSoutput[["summary"]])), 1]
 
 
-  PML.gen.gamma <- 1 / gen.gamma.mod$BUGSoutput[["summary"]][grep("invLik", rownames(gen.gamma.mod$BUGSoutput[["summary"]])), 1]
+  PML.gen.gamma <- PML_calc(gen.gamma.mod)
   PML.gen.gamma.trans <- sum(log(PML.gen.gamma)) * (-2)
   Like.sims.gen.gamma <- gen.gamma.mod$BUGSoutput[["sims.matrix"]][, grep("Like", colnames(gen.gamma.mod$BUGSoutput[["sims.matrix"]]))]
   WAIC.gen.gamma <- waic(log(Like.sims.gen.gamma))
@@ -1245,12 +1297,21 @@ b ~ dgamma(0.001,0.001)
 #' @md
 #' @examples \dontrun{
 #' mod.comp <-compare.surv.mods(Collapsing_Model, df)}
-compare.surv.mods <- function(object, max_predict = 10) {
+compare.surv.mods <- function(object, max_predict = 10,chng.num = "all", plot.best =3,
+                              n.iter.jags = 2000,
+                              n.thin.jags = NULL,
+                              n.burnin.jags = NULL) {
   interval <- max_predict/100
   df <- object$df
   cat(crayon::blue("Evaluating Individual log-likelihood for changepoint model \n ... can take several minutes"))
 
   log.lik.piece <- get.loglik(object)
+
+  if(chng.num != "all"){
+    num.chng <- apply(object$k.stacked,1, function(x){length(na.omit(x))})
+    log.lik.piece <-  log.lik.piece[which(num.chng == chng.num),]
+  }
+
 
   indiv.lik.piece <- exp(log.lik.piece)
   PML.indiv.piece <- 1 / indiv.lik.piece
@@ -1259,7 +1320,9 @@ compare.surv.mods <- function(object, max_predict = 10) {
   minus2logPML.piece <- -2 * sum(log(PML.piece))
   WAIC.piece <- waic(log.lik.piece)$estimate[3, 1]
 
-  jags_output <- fit_surv_models(df, max_predict = max_predict)
+  jags_output <- fit_surv_models(df, max_predict = max_predict, n.iter.jags ,
+                                 n.thin.jags,
+                                 n.burnin.jags)
 
   piecewise.mod.fit <- data.frame(
     Model = "Piecewise Exponential",
@@ -1270,7 +1333,7 @@ compare.surv.mods <- function(object, max_predict = 10) {
   colnames(mod.comp) <- c("Model", "-2log(PML)", "WAIC")
 
 
-  plot_surv <- plot(object, add.post = F, max_predict = max_predict, interval = interval)
+  plot_surv <- plot(object, add.post = F,chng.num = chng.num, max_predict = max_predict, interval = interval)
 
   t_pred <- seq(0, to = max_predict, by = interval)
 
@@ -1284,30 +1347,66 @@ compare.surv.mods <- function(object, max_predict = 10) {
 
 
 
-  colors <- c(
-    "KM curve" = "black",
-    "Piecewise Expo" = "purple",
-    "Exponential" = "red",
-    "Weibull" = "cyan",
-    "Gamma" = "brown",
-    "Log-Logistic" = "blue",
-    "Log-Normal" = "pink",
-    "Gompertz" = "green",
-    "Gen. Gamma" = "orange"
-  )
+  # colors <- c(
+  #   "KM curve" = "black",
+  #   "Piecewise Expo" = "purple",
+  #   "Exponential" = "red",
+  #   "Weibull" = "cyan",
+  #   "Gamma" = "brown",
+  #   "Log-Logistic" = "blue",
+  #   "Log-Normal" = "pink",
+  #   "Gompertz" = "green",
+  #   "Gen. Gamma" = "orange"
+  # )
   # https://stackoverflow.com/questions/13701347/force-the-origin-to-start-at-0
+  #https://stackoverflow.com/questions/18394391/custom-legend-for-multiple-layer-ggplot
+  #https://www.biostars.org/p/234142/
+
+
+  df_order <- c("df_surv_expo", "df_surv_weib", "df_surv_gamma","df_surv_llogis", "df_surv_lnorm", "df_surv_gomp", "df_surv_gen.gamma")
+  df_selc <- df_order[order(jags_output$model.fit$WAIC)[1:plot.best]]
+
+  model_names <- gsub("df_surv_", "", df_order)[order(jags_output$model.fit$WAIC)[1:plot.best]]
+
+  col_vec <-    c(
+    "black",
+    "purple",
+    "red",
+    "cyan",
+    "brown",
+    "blue",
+    "pink",
+    "green",
+    "orange")
+
+  col_name <- c(
+    "KM curve",
+    "Piecewise Expo",
+    "Exponential" ,
+    "Weibull" ,
+    "Gamma",
+    "Log-Logistic",
+    "Log-Normal" ,
+    "Gompertz" ,
+    "Gen. Gamma"
+  )
+
+  colors <- col_vec
+  names(colors) <- col_name
+
+   col_selc <- c(1,2,order(jags_output$model.fit$WAIC)[1:plot.best]+2)
 
 
 
-  plot_Surv_all <- plot_surv +
-    geom_line(df_surv_expo, mapping = aes(y = jags_output.jags.surv.Surv.expo, x = t_pred, col = "Exponential"), inherit.aes = F) +
-    geom_line(df_surv_weib, mapping = aes(y = jags_output.jags.surv.Surv.weib, x = t_pred, col = "Weibull"), inherit.aes = F) +
-    geom_line(df_surv_gamma, mapping = aes(y = jags_output.jags.surv.Surv.gamma, x = t_pred, col = "Gamma"), inherit.aes = F) +
-    geom_line(df_surv_llogis, mapping = aes(y = jags_output.jags.surv.Surv.llogis, x = t_pred, col = "Log-Logistic"), inherit.aes = F) +
-    geom_line(df_surv_lnorm, mapping = aes(y = jags_output.jags.surv.Surv.lnorm, x = t_pred, col = "Log-Normal"), inherit.aes = F) +
-    geom_line(df_surv_gomp, mapping = aes(y = jags_output.jags.surv.Surv.gomp, x = t_pred, col = "Gompertz"), inherit.aes = F) +
-    geom_line(df_surv_gen.gamma, mapping = aes(y = jags_output.jags.surv.Surv.gen.gamma, x = t_pred, col = "Gen. Gamma"), inherit.aes = F) +
-    scale_color_manual(values = colors) +
+  for(i in 1:plot.best){
+    plot_surv <- plot_surv+geom_line(get(df_selc[i]), mapping = aes_string(y = paste0("jags_output.jags.surv.Surv.",model_names[i]), x = "t_pred",
+                                                                           colour = paste0("\'",col_name[col_selc[i+2]], "\'" )),
+                                     inherit.aes = F )
+
+  }
+
+
+   plot_Surv_all <- plot_surv+scale_color_manual(values = colors[col_selc])+
     labs(
       x = "Time",
       y = "Survival",
@@ -1316,6 +1415,25 @@ compare.surv.mods <- function(object, max_predict = 10) {
     theme_classic() +
     theme(legend.position = c(0.9, 0.8)) +
     geom_vline(xintercept = c(max(df$time)), linetype = "dotted")
+
+
+  # plot_Surv_all <- plot_surv +
+  #   geom_line(df_surv_expo, mapping = aes(y = jags_output.jags.surv.Surv.expo, x = t_pred, col = "Exponential"), inherit.aes = F) +
+  #   geom_line(df_surv_weib, mapping = aes(y = jags_output.jags.surv.Surv.weib, x = t_pred, col = "Weibull"), inherit.aes = F) +
+  #   geom_line(df_surv_gamma, mapping = aes(y = jags_output.jags.surv.Surv.gamma, x = t_pred, col = "Gamma"), inherit.aes = F) +
+  #   geom_line(df_surv_llogis, mapping = aes(y = jags_output.jags.surv.Surv.llogis, x = t_pred, col = "Log-Logistic"), inherit.aes = F) +
+  #   geom_line(df_surv_lnorm, mapping = aes(y = jags_output.jags.surv.Surv.lnorm, x = t_pred, col = "Log-Normal"), inherit.aes = F) +
+  #   geom_line(df_surv_gomp, mapping = aes(y = jags_output.jags.surv.Surv.gomp, x = t_pred, col = "Gompertz"), inherit.aes = F) +
+  #   geom_line(df_surv_gen.gamma, mapping = aes(y = jags_output.jags.surv.Surv.gen.gamma, x = t_pred, col = "Gen. Gamma"), inherit.aes = F) +
+  #   scale_color_manual(values = colors) +
+  #   labs(
+  #     x = "Time",
+  #     y = "Survival",
+  #     color = "Survival Functions"
+  #   ) +
+  #   theme_classic() +
+  #   theme(legend.position = c(0.9, 0.8)) +
+  #   geom_vline(xintercept = c(max(df$time)), linetype = "dotted")
 
 
   return(list(mod.comp = mod.comp, jag.models = jags_output$jags.models, plot_Surv_all = plot_Surv_all))
