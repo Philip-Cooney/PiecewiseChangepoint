@@ -179,6 +179,32 @@ mod_comp <-compare.surv.mods(Collapsing_Model,
                              n.burnin.jags = 1000)
 
 
+Piecewise_LL<- get.loglik(Collapsing_Model)
+index_2 <- apply(Collapsing_Model$k.stacked, 1, function(x){length(na.omit(x))}) ==2
+
+total_piecewiseLL <- mean(rowSums(Piecewise_LL[index_2,]))
+
+
+#2 changepoint + 3 hazards
+num.param_piece <- mean(2*2 +1)
+num.param <- c(num.param_piece,1,2,2,2,2,2,3)
+
+AIC_vec <- BIC_vec <- rep(NA, 9)
+
+AIC_vec[8] <- -2*total_piecewiseLL + 2*num.param[1]
+BIC_vec[8] <- -2*total_piecewiseLL + num.param[1]*log(sum(stanford_test$status))
+
+
+for(i in 1:length(mod_comp[["jag.models"]])){
+  index <- grep("total_LLik",rownames(mod_comp[["jag.models"]][[i]][["BUGSoutput"]][["summary"]]))
+  minus_2LL<- -2*mod_comp[["jag.models"]][[i]][["BUGSoutput"]][["summary"]][index,1]
+  AIC_vec[i] <- minus_2LL + 2*num.param[i]
+  BIC_vec[i] <- minus_2LL + num.param[i]*log(sum(stanford_test$status))
+
+}
+
+
+
 
 ## 2.2 Fit Royston Parmer models -----
 
@@ -194,6 +220,13 @@ rps.1  <- expertsurv::fit.models.expert(formula=Surv(time,status)~1,data=stanfor
                                         opinion_type = "survival",
                                         times_expert = 1,
                                         param_expert = param_expert_vague)
+
+AIC_vec[9] <- rps.1$model.fitting$aic
+BIC_vec[9] <- rps.1$model.fitting$aic - 2*3 +3*log(sum(stanford_test$status))
+
+#rps.1$model.fitting$aic - 2*3 + 3*log(length(stanford_test$status))
+
+
 # 1 Knot fits best
 
 # rps.2  <- expertsurv::fit.models.expert(formula=Surv(time,status)~1,data=stanford_test,
@@ -312,23 +345,28 @@ AUC = c(
         integrate.xy(t, rps_St_df[,"St_rps.1"]),AUC_true)
 
 AUC_diff = c(
-             integrate.xy(t, abs(Surv.expo - surv_km_time[1:length(t)])),
-             integrate.xy(t, abs(Surv.weibull - surv_km_time[1:length(t)])),
-             integrate.xy(t, abs(Surv.gamma - surv_km_time[1:length(t)])),
-             integrate.xy(t, abs(Surv.lnorm - surv_km_time[1:length(t)])),
-             integrate.xy(t, abs(Surv.llogis - surv_km_time[1:length(t)])),
-             integrate.xy(t, abs(Surv.gomp - surv_km_time[1:length(t)])),
-             integrate.xy(t, abs(Surv.gen.gamma - surv_km_time[1:length(t)])),
-             integrate.xy(t, abs(St_piecewise_mean-surv_km_time[1:length(t)])),
-             integrate.xy(t, abs(rps_St_df[,"St_rps.1"] - surv_km_time[1:length(t)])),
-             NA)
+  integrate.xy(t, abs(Surv.expo - surv_km_time[1:length(t)])),
+  integrate.xy(t, abs(Surv.weibull - surv_km_time[1:length(t)])),
+  integrate.xy(t, abs(Surv.gamma - surv_km_time[1:length(t)])),
+  integrate.xy(t, abs(Surv.lnorm - surv_km_time[1:length(t)])),
+  integrate.xy(t, abs(Surv.llogis - surv_km_time[1:length(t)])),
+  integrate.xy(t, abs(Surv.gomp - surv_km_time[1:length(t)])),
+  integrate.xy(t, abs(Surv.gen.gamma - surv_km_time[1:length(t)])),
+  integrate.xy(t, abs(St_piecewise_mean-surv_km_time[1:length(t)])),
+  integrate.xy(t, abs(rps_St_df[,"St_rps.1"] - surv_km_time[1:length(t)])),
+  NA)
 
-mod_compfinal <- rbind(mod_comp2,c(NA,NA,NA))
+mod_compfinal <- rbind(cbind(mod_comp2,AIC_vec,BIC_vec),c(NA,NA,NA))
 mod_compfinal$Model[nrow(mod_compfinal)] <- "True Observations"
 mod_compfinal <- cbind(mod_compfinal, AUC, AUC_diff)
 
-mod_compfinal[order(mod_compfinal$AUC_diff),] %>% mutate_if(is.numeric, round, digits = 2)
+mod_compfinal<- mod_compfinal[order(mod_compfinal$AUC_diff),] %>% mutate_if(is.numeric, round, digits = 2)
 
+print(xtable::xtable(mod_compfinal, type = "latex"), include.rownames=FALSE)
+
+df_IC <- round(data.frame(AIC = mod_compfinal$AIC_vec, BIC =  mod_compfinal$BIC_vec), 2)
+df_IC <- cbind("&",df_IC$AIC, "&", df_IC$BIC )
+paste(df_IC[,1],df_IC[,2],df_IC[,3],df_IC[,4] )
 # 3. Leukemia Example ----------------------------------------------------
 
 library("openxlsx")

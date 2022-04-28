@@ -892,7 +892,7 @@ fit_surv_models <- function(df, max_predict = 10,
     St_pred[i] <- 1- pexp(t_pred[i],lambda)
   }
   lambda ~ dgamma(0.001,0.001)
-
+  total_LLik <- sum(log(Like))
 }"
 
   # Weibull Model
@@ -910,6 +910,8 @@ St_pred[i] <- 1- pweib(t_pred[i],v,lambda)
 }
 lambda ~ dgamma(0.001,0.001)
 v ~ dgamma(0.001,0.001)
+  total_LLik <- sum(log(Like))
+
 }"
 
   # Weibull Model
@@ -928,6 +930,8 @@ v ~ dgamma(0.001,0.001)
 
 lambda ~ dgamma(0.001,0.001)
 shape ~dgamma(0.001,0.001)
+  total_LLik <- sum(log(Like))
+
 }"
 
   # Log-Normal Model
@@ -945,6 +949,8 @@ shape ~dgamma(0.001,0.001)
 mu ~ dnorm(0,0.001)
 sd ~ dunif(0,10)
 tau <- pow(sd,-2)
+  total_LLik <- sum(log(Like))
+
 }"
 
   # Loglogistic Model
@@ -968,6 +974,7 @@ scale ~ dgamma(0.001,0.001)
 tau <- pow(scale,-1) # Inverse of scale which is beta on the log-logistic dist
 beta <- exp(mu)
 alpha <- tau
+  total_LLik <- sum(log(Like))
 
 }"
 
@@ -1002,6 +1009,7 @@ for(i in 1:length(t_pred)){
 
 a ~ dnorm(0,0.001)
 b ~ dunif(0,10)
+  total_LLik <- sum(log(Like))
 }"
 
   # Generalized Gamma Model
@@ -1021,6 +1029,8 @@ b ~ dunif(0,10)
     r ~ dgamma(0.001,0.001)
     lambda ~ dgamma(0.001,0.001)
     b ~ dgamma(0.001,0.001)
+     total_LLik <- sum(log(Like))
+
 }"
 
 
@@ -1088,7 +1098,7 @@ b ~ dunif(0,10)
     data = data_jags,
     inits = inits_list("exp", n.chains),
     n.chains = n.chains,
-    parameters.to.save = c("Like", "lambda",  "St_pred"),
+    parameters.to.save = c("Like", "lambda",  "St_pred","total_LLik"),
     n.iter = n.iter.jags,
     n.thin = n.thin.jags,
     n.burnin = n.burnin.jags
@@ -1107,7 +1117,7 @@ b ~ dunif(0,10)
     data = data_jags,
     inits = inits_list("weibull", n.chains),
     n.chains = n.chains,
-    parameters.to.save = c("lambda", "v", "Like", "St_pred"),
+    parameters.to.save = c("lambda", "v", "Like", "St_pred","total_LLik"),
     n.iter = n.iter.jags,
     n.thin = n.thin.jags,
     n.burnin = n.burnin.jags
@@ -1119,7 +1129,7 @@ b ~ dunif(0,10)
     data = data_jags,
     inits = inits_list("gamma", n.chains),
     n.chains = n.chains,
-    parameters.to.save = c("lambda", "shape", "Like", "St_pred"),
+    parameters.to.save = c("lambda", "shape", "Like", "St_pred","total_LLik"),
     n.iter = n.iter.jags,
     n.thin = n.thin.jags,
     n.burnin = n.burnin.jags
@@ -1131,7 +1141,7 @@ b ~ dunif(0,10)
     data = data_jags,
     inits = inits_list("lnorm", n.chains),
     n.chains = n.chains,
-    parameters.to.save = c("mu", "sd", "Like","St_pred"),
+    parameters.to.save = c("mu", "sd", "Like","St_pred","total_LLik"),
     n.iter = n.iter.jags,
     n.thin = n.thin.jags,
     n.burnin = n.burnin.jags
@@ -1143,7 +1153,7 @@ b ~ dunif(0,10)
     data = data_jags_llogis,
     inits = inits_list("llogis", n.chains),
     n.chains = n.chains,
-    parameters.to.save = c("alpha", "beta", "Like",  "St_pred"),
+    parameters.to.save = c("alpha", "beta", "Like",  "St_pred","total_LLik"),
     n.iter = n.iter.jags,
     n.thin = n.thin.jags,
     n.burnin = n.burnin.jags
@@ -1155,7 +1165,7 @@ b ~ dunif(0,10)
     data = data_gomp,
     inits = inits_list("gompertz", n.chains),
     n.chains = n.chains,
-    parameters.to.save = c("a", "b", "Like",  "St_pred"),
+    parameters.to.save = c("a", "b", "Like",  "St_pred","total_LLik"),
     n.iter = n.iter.jags,
     n.thin = n.thin.jags,
     n.burnin = n.burnin.jags
@@ -1167,7 +1177,7 @@ b ~ dunif(0,10)
     data = data_jags,
     inits = inits_list("gengamma", n.chains),
     n.chains = n.chains,
-    parameters.to.save = c("r", "lambda", "b", "Like",  "St_pred"),
+    parameters.to.save = c("r", "lambda", "b", "Like",  "St_pred","total_LLik"),
     n.iter = n.iter.jags,
     n.thin = n.thin.jags,
     n.burnin = n.burnin.jags
