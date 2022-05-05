@@ -1,30 +1,29 @@
 
 
 
-rpwexp =function(n,lam, s){
-  #Function provided by Andrew Chappel
-  s <- c(0,s,Inf)
-  L=length(s)-2
-  ##Generate Uniform random variables for inverting the CDF
-  U=runif(n,0,1)
-  ##This stores the actual values simulated
-  X=U
-  cum1=s[2]*lam[1] ##First interval contribution
+rpwexp <- function(n, lam, s){
 
+  U = runif(n, 0, 1)
+  X = rep(NA,n)
+  haz_seg <- diff(c(0,s))*lam[-length(lam)]
+  cum_haz <- cumsum(haz_seg)
+  St_thres <- exp(-cum_haz)
+  #https://rdrr.io/cran/CPsurv/src/R/sim.survdata.R
   for(i in 1:n){
-    if(U[i]<(1-exp(-cum1))){
-      ##Just invert the cdf
-      X[i]=-log(1-U[i])/lam[1]
-
+    int <- which(U[i] < St_thres)
+    if(length(int) == 0){
+      X[i] = qexp(U[i], rate = lam[1], lower.tail = F)
     }else{
-      X[i]=-(log(1-U[i])+cum1-lam[2]*s[2])/(lam[2])
-
+      X[i] = s[max(int)] + qexp(U[i]/St_thres[max(int)], rate = lam[max(int)+1], lower.tail = F)
     }
+
   }
-  X=pmin(X,s[length(s)])
   return(X)
 
 }
+
+
+
 
 
 SurvSplit <- function (Y, cuts){
