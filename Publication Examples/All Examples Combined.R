@@ -182,28 +182,43 @@ mod_comp <-compare.surv.mods(Collapsing_Model,
 Piecewise_LL<- get.loglik(Collapsing_Model)
 index_2 <- apply(Collapsing_Model$k.stacked, 1, function(x){length(na.omit(x))}) ==2
 
-total_piecewiseLL <- mean(rowSums(Piecewise_LL[index_2,]))
-
-
 #2 changepoint + 3 hazards
 num.param_piece <- mean(2*2 +1)
-num.param <- c(num.param_piece,1,2,2,2,2,2,3)
+num.param <- c(1,2,2,2,2,2,3)
 
 AIC_vec <- BIC_vec <- rep(NA, 9)
 
-AIC_vec[8] <- -2*total_piecewiseLL + 2*num.param[1]
-BIC_vec[8] <- -2*total_piecewiseLL + num.param[1]*log(sum(stanford_test$status))
+#Brooks Approach
+# total_piecewiseLL <- mean(rowSums(Piecewise_LL[index_2,]))
+# AIC_vec[8] <- -2*total_piecewiseLL + 2*num.param[1]
+# BIC_vec[8] <- -2*total_piecewiseLL + num.param[1]*log(sum(stanford_test$status))
 
+#Raftery Approach
+LL_max <- mean(rowSums(Piecewise_LL[index_2,])) +var(rowSums(Piecewise_LL[index_2,]))
+AIC_vec[8] <- -2*LL_max + 2*num.param_piece
+BIC_vec[8] <- -2*LL_max + num.param_piece*log(sum(stanford_test$status))
+
+
+mod.flexsurv <- c("exp", "weibullPH","gamma",  "lnorm", "llogis","gompertz", "gengamma.orig")
 
 for(i in 1:length(mod_comp[["jag.models"]])){
   index <- grep("total_LLik",rownames(mod_comp[["jag.models"]][[i]][["BUGSoutput"]][["summary"]]))
-  minus_2LL<- -2*mod_comp[["jag.models"]][[i]][["BUGSoutput"]][["summary"]][index,1]
-  AIC_vec[i] <- minus_2LL + 2*num.param[i]
-  BIC_vec[i] <- minus_2LL + num.param[i]*log(sum(stanford_test$status))
+#Brooks approach
+# minus_2LL<- -2*mod_comp[["jag.models"]][[i]][["BUGSoutput"]][["summary"]][index,1]
+#  AIC_vec[i] <- minus_2LL + 2*num.param[i]
+#  BIC_vec[i] <- minus_2LL + num.param[i]*log(sum(stanford_test$status))
 
+#Raftery Approach
+  LL_max <- mod_comp[["jag.models"]][[i]][["BUGSoutput"]][["summary"]][index,1] + (mod_comp[["jag.models"]][[i]][["BUGSoutput"]][["summary"]][index,2])^2
+
+  # MLE_true <- flexsurv::flexsurvreg(formula=Surv(time,status)~1,
+  #                                   data=stanford_test,
+  #                                   dist = mod.flexsurv[i])
+  #print(c(LL_max, MLE_true$loglik))
+
+  AIC_vec[i] <- -2*LL_max + 2*num.param[i]
+  BIC_vec[i] <- -2*LL_max + num.param[i]*log(sum(stanford_test$status))
 }
-
-
 
 
 ## 2.2 Fit Royston Parmer models -----
@@ -221,8 +236,18 @@ rps.1  <- expertsurv::fit.models.expert(formula=Surv(time,status)~1,data=stanfor
                                         times_expert = 1,
                                         param_expert = param_expert_vague)
 
-AIC_vec[9] <- rps.1$model.fitting$aic
-BIC_vec[9] <- rps.1$model.fitting$aic - 2*3 +3*log(sum(stanford_test$status))
+
+LL_max <- mean(rstan::extract(rps.1$models$`Royston-Parmar`)[["lp__"]]) + var(rstan::extract(rps.1$models$`Royston-Parmar`)[["lp__"]])
+
+parm_rps.1 <-3
+AIC_vec[9] <- -2*LL_max + 2*parm_rps.1
+BIC_vec[9] <- -2*LL_max + parm_rps.1*log(sum(stanford_test$status))
+
+#flexsurv::flexsurvspline(formula=Surv(time,status)~1, data=stanford_test, k = 1)
+#Brooks approach
+
+#AIC_vec[9] <- rps.1$model.fitting$aic
+#BIC_vec[9] <- mean(rstan::extract(rps.1$models$`Royston-Parmar`)[["lp__"]]) +parm_rps.1*log(sum(stanford_test$status))
 
 #rps.1$model.fitting$aic - 2*3 + 3*log(length(stanford_test$status))
 
@@ -292,6 +317,8 @@ plot_all <- mod_comp$plot_Surv_all+
 
 
 add_km(plot_all, df = stanford2 %>% mutate(time = time/365))
+
+ggsave(filename = "Stanford Survival.png",width = 8, height = 4.24)
 
 #Frequentist (In case Bayesian appproach doesn't fit)
 # sp1 <- flexsurvspline(Surv(time, status) ~ 1, data = stanford_test, k = 1,
