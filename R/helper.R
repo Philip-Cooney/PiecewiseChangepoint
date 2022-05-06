@@ -26,6 +26,10 @@ rpwexp <- function(n, lam, s){
 
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 1bb12a7f4f9f37e33c66e4db87b5472316f17a8e
 SurvSplit <- function (Y, cuts){
   #Taken from eha
     if (NCOL(Y) == 2)
