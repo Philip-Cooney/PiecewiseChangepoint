@@ -14,13 +14,14 @@ rpwexp <- function(n, lam, s){
     if(length(int) == 0){
       X[i] = qexp(U[i], rate = lam[1], lower.tail = F)
     }else{
-      X[i] = s[max(int)] + qexp(U[i]/St_thres[max(int)], rate = lam[max(int)], lower.tail = F)
+      X[i] = s[max(int)] + qexp(U[i]/St_thres[max(int)], rate = lam[max(int)+1], lower.tail = F)
     }
 
   }
   return(X)
 
 }
+
 
 
 
