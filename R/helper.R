@@ -213,7 +213,7 @@ gen_piece_df <- function(n_obs, n_events_req, num.breaks, rate, t_change, max_ti
       samp <- rexp(n_obs, rate)
     } else {
       samp_cens <- rpwexp(n_cens_req * 2, rate, t_change) # Assume that on average half the observations will be censors
-      samp <- rpwexp(n_obs, ratemat,  t_change)
+      samp <- rpwexp(n_obs, rate,  t_change)
     }
     samp_cens <- sapply(samp_cens, FUN = min, max_time)
     samp_cens <- sample(c(samp_cens, rep(max_time, n_obs - n_cens_req * 2))) # Randomized vector
@@ -622,9 +622,13 @@ add_km <- function(plt, df, colour = "black") {
     geom_step(data = km.data, aes(x = time, y = lower), colour = colour, linetype = "dashed", inherit.aes = F)
 }
 
-get_Surv <- function(object, chng.num = "all", max_predict) {
-  interval <- max_predict/100
-  time <- c(seq(from = 0, to = max_predict, by = interval))
+get_Surv <- function(object, chng.num = "all", max_predict = NULL, time = NULL) {
+
+  if(is.null(time)){
+    interval <- max_predict/100
+    time <- c(seq(from = 0, to = max_predict, by = interval))
+  }
+
   k <- object$k.stacked
   lambda <- object$lambda
   changepoint <- object$changepoint
@@ -650,9 +654,10 @@ get_Surv <- function(object, chng.num = "all", max_predict) {
       St <- cbind(St, surv_nochange(time, num_zero, lambda_0[, 1]))
     } else {
       k_curr <- data.frame(k[which(num.changepoints == changepoints_eval[i]), 1:changepoints_eval[i]])
-      changepoint_curr <- data.frame(changepoint[which(num.changepoints == changepoints_eval[i]), 1:changepoints_eval[i]])
-      lambda_curr <- lambda[which(num.changepoints == changepoints_eval[i]), 1:(changepoints_eval[i] + 1)]
-      changepoint_df <- cbind(0, changepoint_curr[, 1:changepoints_eval[i]])
+      changepoint_curr <- data.frame(changepoint[which(num.changepoints == changepoints_eval[i]), 1:changepoints_eval[i],
+                                                 drop=FALSE])
+      lambda_curr <- lambda[which(num.changepoints == changepoints_eval[i]), 1:(changepoints_eval[i] + 1), drop=FALSE]
+      changepoint_df <- cbind(0, changepoint_curr[, 1:changepoints_eval[i], drop=FALSE])
       time.interval_df <- t(apply(changepoint_df, 1, diff))
 
       if (changepoints_eval[i] == 1) {
@@ -660,7 +665,7 @@ get_Surv <- function(object, chng.num = "all", max_predict) {
         surv_df <- cbind(1, t(exp(-cum_haz_df)))
       } else {
         # head(index2, -1) last hazard not needed for cumhaz calc
-        cum_haz_df <- t(apply(time.interval_df * lambda_curr[, 1:changepoints_eval[i]], 1, cumsum))
+        cum_haz_df <- t(apply(time.interval_df * lambda_curr[, 1:changepoints_eval[i],drop=FALSE], 1, cumsum))
         surv_df <- cbind(1, exp(-cum_haz_df))
       }
       St <- cbind(St, surv_change(time, nrow(k_curr), lambda_curr, data.matrix(changepoint_df), surv_df))
