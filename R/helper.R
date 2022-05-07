@@ -668,7 +668,9 @@ get_Surv <- function(object, chng.num = "all", max_predict = NULL, time = NULL) 
         cum_haz_df <- t(apply(time.interval_df * lambda_curr[, 1:changepoints_eval[i],drop=FALSE], 1, cumsum))
         surv_df <- cbind(1, exp(-cum_haz_df))
       }
-      St <- cbind(St, surv_change(time, nrow(k_curr), lambda_curr, data.matrix(changepoint_df), surv_df))
+      #Needs to nrow - 1 due to C indexs
+      St <- cbind(St, surv_change(time, nrow(k_curr)-1, lambda_curr, data.matrix(changepoint_df), surv_df))
+
     }
   }
   rownames(St) <- time
