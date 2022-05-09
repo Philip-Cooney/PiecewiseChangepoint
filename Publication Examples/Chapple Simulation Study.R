@@ -4,7 +4,7 @@
 library("survival")
 library("BayesReversePLLH")
 library("PiecewiseChangepoint")
-
+library("sfsmisc")
 
 max_time =  2
 rate1 <- c(0.25)
@@ -34,7 +34,7 @@ for(i in 1:11){
 }
 
 
-pathway <- "~" #"~/Simulation Study 2022/Chapple Comparison/"
+pathway <- "~/Simulation Study 2022/Chapple Comparison/"
 
 
 sim.study_comp <- function(n_obs,n_events_req,rate,t_change, max_time =2,
@@ -196,12 +196,12 @@ sim.study_comp <- function(n_obs,n_events_req,rate,t_change, max_time =2,
                                       ISSE_restrict = ISSE_Collapsing_time_horizon)
 
 
-  list_result[["Chapple"]] <- list(selc_mod = selc_mod_Chapple,
-                                   prob.correct = prob.correct_Chapple,
-                                   RMSE_time_horizon = RMSE_Chapple_time_horizon,
-                                   RMSE_restrict = RMSE_Chapple_restrict,
-                                   ISSE_time_horizon = ISSE_Chapple_time_horizon,
-                                   ISSE_restrict = ISSE_Chapple_time_horizon)
+  list_result[["RJMCMC"]] <- list(selc_mod = selc_mod_Chapple,
+                                  prob.correct = prob.correct_Chapple,
+                                  RMSE_time_horizon = RMSE_Chapple_time_horizon,
+                                  RMSE_restrict = RMSE_Chapple_restrict,
+                                  ISSE_time_horizon = ISSE_Chapple_time_horizon,
+                                  ISSE_restrict = ISSE_Chapple_time_horizon)
 
   list_result[["n_events"]] <- n.events
 
@@ -209,10 +209,12 @@ sim.study_comp <- function(n_obs,n_events_req,rate,t_change, max_time =2,
 
 }
 
+#ISsue Row index is out of bounds: [index=1; row extent=1].
 
- for(q in 1:length(censor_vec) ){
-   for(j in 1:length(sample_vec)){
-     for(i in 1:length(rate_list)){
+#Occurs when lambda_df row is equal to 1
+for(q in 1:length(censor_vec) ){
+  for(j in 1:length(sample_vec)){
+    for(i in 1:length(rate_list)){
 
       if(length(rate_list[[i]]) ==1){
         t_change_curr <- NA
@@ -228,8 +230,8 @@ sim.study_comp <- function(n_obs,n_events_req,rate,t_change, max_time =2,
                                           rate = rate_list[[i]],
                                           t_change = t_change_curr,
                                           max_time = max_time,
-                                          n.sims = 10,
-                                          sims = 10,
+                                          n.sims = 100,
+                                          sims = 1500,
                                           burn_in = 5,
                                           lambda.prior = 1))
 
@@ -239,14 +241,105 @@ sim.study_comp <- function(n_obs,n_events_req,rate,t_change, max_time =2,
   }
 }
 
+for(i in 1:length(rate_list)){
+  dir.create(paste0(pathway, paste0("Compare_RJMCMC_",paste0(rate_list[[i]],collapse = "_")), "_plots"))
+}
+
+
+
+names_sq_error <- c("RMSE_time_horizon","RMSE_restrict","ISSE_time_horizon","ISSE_restrict")
+df_correct <-  NULL
+for(i in 1:length(rate_list)){
+
+  folder_output <- paste0(pathway, paste0("Compare_RJMCMC_",paste0(rate_list[[i]],collapse = "_")), "_plots")
+  df_mod <- df_output <- NULL
+
+  for(q in 1:length(censor_vec) ){
+    for(j in 1:length(sample_vec)){
+
+
+      if(length(rate_list[[i]]) ==1){
+        t_change_curr <- NA
+      }else{
+        t_change_curr  <- c(0.5,1)[1:(length(rate_list[[i]])-1)]
+      }
+
+      current_name <- paste0("Compare_RJMCMC_",paste0(rate_list[[i]],collapse = "_"),"_size_",sample_vec[j],"_censor_",censor_vec[q])
+
+      scen_eval <- paste0("Censoring ",censor_vec[q], "; Size ", sample_vec[j]  )
+      scen_eval_list <- readRDS(file = paste0(pathway,current_name,".rds"))
+
+      df_correct_temp <-  data.frame(Scenario = paste0(scen_eval,paste0("; Hazard c(", paste0(rate_list[[i]], collapse = ","),")")))
+      df_correct_temp$Collaping <- scen_eval_list[[1]]$prob.correct
+      df_correct_temp$RJMCMC <- scen_eval_list[[2]]$prob.correct
+
+      df_correct <- rbind(df_correct, df_correct_temp)
+      for(x in 1:2){#Number of models
+        df_temp <- data.frame(Scen = scen_eval, Model = names(scen_eval_list)[x])
+        for(p in 1:4){#Number of measures
+          df_temp <- cbind(df_temp,scen_eval_list[[x]][[names_sq_error[p]]])
+        }
+        names(df_temp) <- c("Scenario", "Model", names_sq_error)
+        df_mod <- rbind(df_mod, df_temp)
+      }
+      df_output  <- rbind(df_output, df_mod)
+    }
+  }
+
+  for( r in 1:4){
+    index <- grep(names_sq_error[r], colnames(df_output) )
+    plot_save <- ggplot(df_output, aes(x=Scenario, y=df_output[,index], fill=Model)) +
+      geom_boxplot()+
+      ylim(c(0,.1))+
+      ylab(gsub("_", " ",names_sq_error[r]))+
+      theme(axis.text.x = element_text(angle = 45, hjust=1))
+
+
+    ggsave(paste0(folder_output,"/", names_sq_error[r],".png" ), height = 6, width = 8)
+
+  }
+
+
+}
+
+
+
 
 # BACKUP----
 
-## 1 Calculate Time Horizon ----
+## 1 Validate Survival Functions ----
+# Ensuring both functions give the same survival
+
+
+### 1.1 Multiple Change-points ----
+ncp <- 2
+cp_sim <-runif(ncp)
+
+lambda_df <- matrix(runif(ncp+1), nrow = 1)
+changepoint_df <- matrix(cp_sim[order(cp_sim)], nrow = 1)
+
+object <- list(lambda = lambda_df,
+               changepoint = changepoint_df)
+
+abs(as.numeric(get_Surv(object, time = seq(0,10, by = 0.5))) -
+      GetSurvPEH(x =seq(0,10, by= 0.5),s = c(0,changepoint_df,100), lam =  log(lambda_df), J  = length(cp_sim))) < 0.0001
+
+### 1.2 No Change-points ----
+
+lambda_df <- matrix(runif(ncp+1), nrow = 1)[,1, drop = F]
+changepoint_df <- matrix(NA, nrow = 1)
+
+object <- list(lambda = lambda_df,
+               changepoint = changepoint_df)
+
+as.numeric(get_Surv(object, time = seq(0,10, by = 0.5)))
+pexp(seq(0,10, by = 0.5), rate = lambda_df, lower.tail = F)
+
+## 2 Calculate Time Horizon ----
 # Calculate appropriate get time-horizon for the simulations
 # Ensuring that less than 1% of population is surviving
-pathway_backup <- "C:/Users/phili/OneDrive/PhD/R packages/PiecewiseChangepoint/PiecewiseChangepoint/Publication Examples/"
-source(paste0(pathway_backup, "Chapple Simulation Backup Functions.R"))
+
+source(paste0("~/Simulation Study 2022/Chapple Comparison/Chapple Simulation Backup Functions.R"))
 time_horizon <- 25
 for(i in 1:length(rate_list)){
   if(length(rate_list[[i]]) ==1){
@@ -261,7 +354,7 @@ for(i in 1:length(rate_list)){
 }
 
 
-## 2 Simulating Events ----
+## 3 Simulating Events ----
 
 #Approach used by Chapple can give a situation where many of the censorsed observations
 # have time 0 otherwise they would have negative survival
@@ -313,7 +406,7 @@ hist(events)
 plot(survfit(Surv(TIME_EVENT, status)~1, data = df_final))
 
 
-## 3 Integration of the Survival function ----
+## 4 Integration of the Survival function ----
 # I'm not sure how Chapple calculates the Area under the curve, however,
 # if we use the rectangular box method it is less accurate than the function
 # Shown by testing versus the analytic value of the Restricted Mean Survival
