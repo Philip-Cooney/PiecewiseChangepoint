@@ -42,173 +42,172 @@ sim.study_comp <- function(n_obs,n_events_req,rate,t_change, max_time =2,
                            n.chains = 1, time_horizon =25){
 
 
-time_seq <- seq(0, time_horizon, length.out = 1500)
-if(any(is.na(t_change))){
-  num.breaks = 0
-}else{
-  num.breaks <- length(t_change)
-}
-
-# 1 Generate holding variables ----
-
-selc_mod_Collasping <- selc_mod_Chapple <- n.events <-  rep(NA, n.sims)
-RMSE_Collapsing_time_horizon <- RMSE_Collapsing_restrict <- RMSE_Chapple_time_horizon <- RMSE_Chapple_restrict <- rep(NA, n.sims)
-ISSE_Collapsing_time_horizon <- ISSE_Collapsing_restrict <- ISSE_Chapple_time_horizon <- ISSE_Chapple_restrict <- rep(NA, n.sims)
-
-# 2 True Values ----
-
-## 2.1 True Survival ----
-
-if(is.na(t_change)){
-  True_Surv <- pexp(time_seq, rate, lower.tail = F)
-}else{
-  True_Surv <- GetSurvPEH(x =time_seq,s = c(0,t_change,100), lam =  log(rate), J  = length(t_change))
-
-}
-True_Surv[1] <- 1
-
-
-## 2.2 RSt (Restricted Mean Survival) ----
-
-True_RSt_restrict <- sfsmisc::integrate.xy(fx = True_Surv[time_seq<= max_time],
-                                           x = time_seq[time_seq<= max_time])
-
-True_RSt_time_horizon <- sfsmisc::integrate.xy(fx = True_Surv,
-                                               x = time_seq)
-
-
-# 3 Run Simulations ----
-
-
-for(i in 1:n.sims){
-  print(paste0("Sim ",i," of ",n.sims))
-
-
-  df <- PiecewiseChangepoint::gen_piece_df(n_obs = n_obs,n_events_req = n_events_req,
-                                           num.breaks = length(t_change),rate = rate ,
-                                           t_change = t_change, max_time = max_time)
-
-  n.events[i] <- sum(df$status)
-
-
-  Collapsing_Model <-    collapsing.model(df,
-                             n.iter = sims,
-                             burn_in = burn_in,
-                             n.chains = n.chains,
-                             alpha.hyper = 1,
-                             beta.hyper1 = 1,
-                             beta.hyper2 = 1,
-                             lambda.prior = lambda.prior)
-
-
-
-  Chapple_Model <- BayesPiecewiseHazard(Y = df$time, I1 =df$status, Poi = lambda.prior,  B = sims*n.chains)
-  for( j in 1:nrow(Chapple_Model[[1]])){ # Requires a large number to calculate survival for time_horizon
-    Chapple_Model[[1]][j,which.max(Chapple_Model[[1]][j, ])] <- 100
+  time_seq <- seq(0, time_horizon, length.out = 1500)
+  if(any(is.na(t_change))){
+    num.breaks = 0
+  }else{
+    num.breaks <- length(t_change)
   }
 
-  Surv.all.Chapple  <- GetALLSurvPEH(time_seq, Chapple_Model)
-  Surv.all.Chapple[,1] <- 1
+  # 1 Generate holding variables ----
 
-  Surv.all.collapsing  <- PiecewiseChangepoint:::get_Surv(object = Collapsing_Model,time = time_seq)
-  #Chapple's function is slower but gives the same results
-  # Surv.all.collapsing  <- GetSurvPEH_collapse(time_seq, mod = mod)
-  # Surv.all.collapsing[,1] <- 1
+  selc_mod_Collasping <- selc_mod_Chapple <- n.events <-  rep(NA, n.sims)
+  RMSE_Collapsing_time_horizon <- RMSE_Collapsing_restrict <- RMSE_Chapple_time_horizon <- RMSE_Chapple_restrict <- rep(NA, n.sims)
+  ISSE_Collapsing_time_horizon <- ISSE_Collapsing_restrict <- ISSE_Chapple_time_horizon <- ISSE_Chapple_restrict <- rep(NA, n.sims)
 
+  # 2 True Values ----
 
+  ## 2.1 True Survival ----
 
-## 3.1 Calculate ISSE ----
+  if(any(is.na(t_change))){
+    True_Surv <- pexp(time_seq, rate, lower.tail = F)
+  }else{
+    True_Surv <- GetSurvPEH(x =time_seq,s = c(0,t_change,100), lam =  log(rate), J  = length(t_change))
 
-  #Can use the rectangular integration from Chapple
-  #Both approaches are the same for ISSE, however,
-  #sfsmisc::integrate.xy is much more accurate for estimating restricted mean survival:
-
-  #time_seq <- seq(0, max(Times), length.out = 1000)
-  #dtheta <- mean(diff(time_seq))
-  #sum(((True_Surv-colMeans(Surv.all.Chapple))^2)*dtheta)
-
-  ISSE_Chapple_time_horizon[i] <- sfsmisc::integrate.xy(x = time_seq, fx = (True_Surv-colMeans(Surv.all.Chapple))^2)
-
-  ISSE_Chapple_restrict[i] <- sfsmisc::integrate.xy(x = time_seq[time_seq<= max_time],
-                                                 fx = ((True_Surv-colMeans(Surv.all.Chapple))^2)[time_seq<= max_time])
+  }
+  True_Surv[1] <- 1
 
 
-  ISSE_Collapsing_time_horizon[i] <- sfsmisc::integrate.xy(x = time_seq, fx = (True_Surv-rowMeans(Surv.all.collapsing))^2)
-  ISSE_Collapsing_restrict[i] <- sfsmisc::integrate.xy(x = time_seq[time_seq<= max_time],
-                                                    fx = ((True_Surv-rowMeans(Surv.all.collapsing))^2)[time_seq<= max_time])
+  ## 2.2 RSt (Restricted Mean Survival) ----
 
-## 3.2 Calculate RSME ----
+  True_RSt_restrict <- sfsmisc::integrate.xy(fx = True_Surv[time_seq<= max_time],
+                                             x = time_seq[time_seq<= max_time])
 
-  #Doesn't matter if the integration is done seperately or at the mean of survival you get same E[R_St]
-  # where R_St is restricted mean survival
-  #sep_int <- apply(Surv.all.collapsing,2, function(x){sfsmisc::integrate.xy(x = time_seq,fx = x)})
-  #mean(sep_int)
-  RMSE_Collapsing_time_horizon[i] <- (sfsmisc::integrate.xy(x = time_seq,
-                                                         fx = rowMeans(Surv.all.collapsing))-True_RSt_time_horizon)^2
-
-  RMSE_Collapsing_restrict[i] <- (sfsmisc::integrate.xy(x = time_seq[time_seq<= max_time],
-                                                     fx = rowMeans(Surv.all.collapsing)[time_seq<= max_time]) - True_RSt_restrict)^2
+  True_RSt_time_horizon <- sfsmisc::integrate.xy(fx = True_Surv,
+                                                 x = time_seq)
 
 
-  RMSE_Chapple_time_horizon[i] <- (sfsmisc::integrate.xy(x = time_seq,
-                                                      fx = colMeans(Surv.all.Chapple))-True_RSt_time_horizon)^2
-
-  RMSE_Chapple_restrict[i] <- (sfsmisc::integrate.xy(x = time_seq[time_seq<= max_time],
-                                                  fx = colMeans(Surv.all.Chapple)[time_seq<= max_time])
-                            - True_RSt_restrict)^2
+  # 3 Run Simulations ----
 
 
-# 4 Most Probable model----
+  for(i in 1:n.sims){
+    print(paste0("Sim ",i," of ",n.sims))
 
-  selc_mod_Collasping[i] <- as.numeric(names(which.max(Collapsing_Model$prob.changepoint)))
-  selc_mod_Chapple[i] <- as.numeric(names(table(Chapple_Model[[3]])[which.max(table(Chapple_Model[[3]]))]))
 
-# 5 Survival Plot ----
+    df <- PiecewiseChangepoint::gen_piece_df(n_obs = n_obs,n_events_req = n_events_req,
+                                             num.breaks = length(t_change),rate = rate ,
+                                             t_change = t_change, max_time = max_time)
 
-  # Not used but provided for reference
+    n.events[i] <- sum(df$status)
 
-  #https://stackoverflow.com/questions/43173044/how-to-compute-the-mean-survival-time
 
-  # km <- survfit(Surv(time,status)~1, data = df)
-  # sum(diff(c(0,km$time))*c(1,km$surv[1:(length(km$surv)-1)]))
-  # survival:::survmean(true_km, rmean=max(Times_event))[[1]]["*rmean"]
-  #
-  #
-  # plot(km)
-  # lines(y = Survs, x = time_seq)
-  # lines(y = colMeans(Surv.all.Chappel), x = time_seq, col = "red")
-  # lines(y = colMeans(Surv.all.collapsing), x = time_seq, col = "blue")
+    Collapsing_Model <-    collapsing.model(df,
+                                            n.iter = sims,
+                                            burn_in = burn_in,
+                                            n.chains = n.chains,
+                                            alpha.hyper = 1,
+                                            beta.hyper1 = 1,
+                                            beta.hyper2 = 1,
+                                            lambda.prior = lambda.prior)
 
+
+
+    Chapple_Model <- BayesPiecewiseHazard(Y = df$time, I1 =df$status, Poi = lambda.prior,  B = sims*n.chains)
+    for( j in 1:nrow(Chapple_Model[[1]])){ # Requires a large number to calculate survival for time_horizon
+      Chapple_Model[[1]][j,which.max(Chapple_Model[[1]][j, ])] <- 100
+    }
+
+    Surv.all.Chapple  <- GetALLSurvPEH(time_seq, Chapple_Model)
+    Surv.all.Chapple[,1] <- 1
+
+    Surv.all.collapsing  <- PiecewiseChangepoint:::get_Surv(object = Collapsing_Model,time = time_seq)
+    #Chapple's function is slower but gives the same results
+    # Surv.all.collapsing  <- GetSurvPEH_collapse(time_seq, mod = mod)
+    # Surv.all.collapsing[,1] <- 1
+
+
+
+    ## 3.1 Calculate ISSE ----
+
+    #Can use the rectangular integration from Chapple
+    #Both approaches are the same for ISSE, however,
+    #sfsmisc::integrate.xy is much more accurate for estimating restricted mean survival:
+
+    #time_seq <- seq(0, max(Times), length.out = 1000)
+    #dtheta <- mean(diff(time_seq))
+    #sum(((True_Surv-colMeans(Surv.all.Chapple))^2)*dtheta)
+
+    ISSE_Chapple_time_horizon[i] <- sfsmisc::integrate.xy(x = time_seq, fx = (True_Surv-colMeans(Surv.all.Chapple))^2)
+
+    ISSE_Chapple_restrict[i] <- sfsmisc::integrate.xy(x = time_seq[time_seq<= max_time],
+                                                      fx = ((True_Surv-colMeans(Surv.all.Chapple))^2)[time_seq<= max_time])
+
+
+    ISSE_Collapsing_time_horizon[i] <- sfsmisc::integrate.xy(x = time_seq, fx = (True_Surv-rowMeans(Surv.all.collapsing))^2)
+    ISSE_Collapsing_restrict[i] <- sfsmisc::integrate.xy(x = time_seq[time_seq<= max_time],
+                                                         fx = ((True_Surv-rowMeans(Surv.all.collapsing))^2)[time_seq<= max_time])
+
+    ## 3.2 Calculate RSME ----
+
+    #Doesn't matter if the integration is done seperately or at the mean of survival you get same E[R_St]
+    # where R_St is restricted mean survival
+    #sep_int <- apply(Surv.all.collapsing,2, function(x){sfsmisc::integrate.xy(x = time_seq,fx = x)})
+    #mean(sep_int)
+    RMSE_Collapsing_time_horizon[i] <- (sfsmisc::integrate.xy(x = time_seq,
+                                                              fx = rowMeans(Surv.all.collapsing))-True_RSt_time_horizon)^2
+
+    RMSE_Collapsing_restrict[i] <- (sfsmisc::integrate.xy(x = time_seq[time_seq<= max_time],
+                                                          fx = rowMeans(Surv.all.collapsing)[time_seq<= max_time]) - True_RSt_restrict)^2
+
+
+    RMSE_Chapple_time_horizon[i] <- (sfsmisc::integrate.xy(x = time_seq,
+                                                           fx = colMeans(Surv.all.Chapple))-True_RSt_time_horizon)^2
+
+    RMSE_Chapple_restrict[i] <- (sfsmisc::integrate.xy(x = time_seq[time_seq<= max_time],
+                                                       fx = colMeans(Surv.all.Chapple)[time_seq<= max_time])
+                                 - True_RSt_restrict)^2
+
+
+    # 4 Most Probable model----
+
+    selc_mod_Collasping[i] <- as.numeric(names(which.max(Collapsing_Model$prob.changepoint)))
+    selc_mod_Chapple[i] <- as.numeric(names(table(Chapple_Model[[3]])[which.max(table(Chapple_Model[[3]]))]))
+
+    # 5 Survival Plot ----
+
+    # Not used but provided for reference
+
+    #https://stackoverflow.com/questions/43173044/how-to-compute-the-mean-survival-time
+
+    # km <- survfit(Surv(time,status)~1, data = df)
+    # sum(diff(c(0,km$time))*c(1,km$surv[1:(length(km$surv)-1)]))
+    # survival:::survmean(true_km, rmean=max(Times_event))[[1]]["*rmean"]
+    #
+    #
+    # plot(km)
+    # lines(y = Survs, x = time_seq)
+    # lines(y = colMeans(Surv.all.Chappel), x = time_seq, col = "red")
+    # lines(y = colMeans(Surv.all.collapsing), x = time_seq, col = "blue")
+
+
+  }
+
+  #Highest posterior model
+  prob.correct_Collapsing <- mean(selc_mod_Collasping == num.breaks)
+  prob.correct_Chapple <- mean(selc_mod_Chapple == num.breaks)
+
+  list_result <- list()
+
+  list_result[["Collapsing"]] <- list(selc_mod = selc_mod_Collasping,
+                                      prob.correct = prob.correct_Collapsing,
+                                      RMSE_time_horizon = RMSE_Collapsing_time_horizon,
+                                      RMSE_restrict = RMSE_Collapsing_restrict,
+                                      ISSE_time_horizon = ISSE_Collapsing_time_horizon,
+                                      ISSE_restrict = ISSE_Collapsing_time_horizon)
+
+
+  list_result[["Chapple"]] <- list(selc_mod = selc_mod_Chapple,
+                                   prob.correct = prob.correct_Chapple,
+                                   RMSE_time_horizon = RMSE_Chapple_time_horizon,
+                                   RMSE_restrict = RMSE_Chapple_restrict,
+                                   ISSE_time_horizon = ISSE_Chapple_time_horizon,
+                                   ISSE_restrict = ISSE_Chapple_time_horizon)
+
+  list_result[["n_events"]] <- n.events
+
+  return(list_result)
 
 }
-
-#Highest posterior model
-prob.correct_Collapsing <- mean(selc_mod_Collasping == num.breaks)
-prob.correct_Chapple <- mean(selc_mod_Chapple == num.breaks)
-
-list_result <- list()
-
-list_result[["Collapsing"]] <- list(selc_mod = selc_mod_Collasping,
-                                    prob.correct = prob.correct_Collapsing,
-                                    RMSE_time_horizon = RMSE_Collapsing_time_horizon,
-                                    RMSE_restrict = RMSE_Collapsing_restrict,
-                                    ISSE_time_horizon = ISSE_Collapsing_time_horizon,
-                                    ISSE_restrict = ISSE_Collapsing_time_horizon)
-
-
-list_result[["Chapple"]] <- list(selc_mod = selc_mod_Chapple,
-                                    prob.correct = prob.correct_Chapple,
-                                    RMSE_time_horizon = RMSE_Chapple_time_horizon,
-                                    RMSE_restrict = RMSE_Chapple_restrict,
-                                    ISSE_time_horizon = ISSE_Chapple_time_horizon,
-                                    ISSE_restrict = ISSE_Chapple_time_horizon)
-
-list_result[["n_events"]] <- n.events
-
-return(list_result)
-
-}
-
 
 
  for(q in 1:length(censor_vec) ){

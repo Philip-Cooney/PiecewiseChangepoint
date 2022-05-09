@@ -629,10 +629,10 @@ get_Surv <- function(object, chng.num = "all", max_predict = NULL, time = NULL) 
     time <- c(seq(from = 0, to = max_predict, by = interval))
   }
 
-  k <- object$k.stacked
+  #k <- object$k.stacked
   lambda <- object$lambda
   changepoint <- object$changepoint
-  num.changepoints <- unlist(apply(k, 1, function(x) {
+  num.changepoints <- unlist(apply(changepoint, 1, function(x) {
     length(na.omit(x))
   }))
 
@@ -653,7 +653,7 @@ get_Surv <- function(object, chng.num = "all", max_predict = NULL, time = NULL) 
       lambda_0 <- data.frame(lambda[which(num.changepoints == changepoints_eval[i]), 1])
       St <- cbind(St, surv_nochange(time, num_zero, lambda_0[, 1]))
     } else {
-      k_curr <- data.frame(k[which(num.changepoints == changepoints_eval[i]), 1:changepoints_eval[i]])
+      #k_curr <- data.frame(k[which(num.changepoints == changepoints_eval[i]), 1:changepoints_eval[i]])
       changepoint_curr <- data.frame(changepoint[which(num.changepoints == changepoints_eval[i]), 1:changepoints_eval[i],
                                                  drop=FALSE])
       lambda_curr <- lambda[which(num.changepoints == changepoints_eval[i]), 1:(changepoints_eval[i] + 1), drop=FALSE]
@@ -669,7 +669,7 @@ get_Surv <- function(object, chng.num = "all", max_predict = NULL, time = NULL) 
         surv_df <- cbind(1, exp(-cum_haz_df))
       }
 
-      St <- cbind(St, surv_change(time, nrow(k_curr), lambda_curr, data.matrix(changepoint_df), surv_df))
+      St <- cbind(St, surv_change(time, nrow(changepoint_curr), lambda_curr, data.matrix(changepoint_df), surv_df))
 
     }
   }
