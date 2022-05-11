@@ -385,7 +385,7 @@ plot.Survival <- function(St, max.num.post = 500, add.km, add.post,alpha.pos, en
     }))
     k_curr <- data.frame(k[which(num.changepoints == env$chng.num), 1:env$chng.num])
     df <- env$object$df
-    df_event <- df[which(df$status == 1), c("status", "time")]
+    df_event <- unique(df[which(df$status == 1), c("status", "time")])
 
     time.break <- df_event[apply(k_curr, 2, FUN = mean), "time"]
     survival.close <- sapply(time.break, FUN = function(x) {
