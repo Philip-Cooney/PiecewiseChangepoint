@@ -1,26 +1,37 @@
 
 devtools::load_all()
-set.seed(123)
-n_obs =300
-n_events_req=300
+set.seed(125)
+n_obs =500
+n_events_req=500
 max_time =  2
 
 rate = c(0.75,0.25)
 t_change =1
 
-df <- gen_piece_df(n_obs = n_obs,n_events_req = n_events_req,
+df <- PiecewiseChangepoint::gen_piece_df(n_obs = n_obs,n_events_req = n_events_req,
                    num.breaks = length(t_change),rate = rate ,
                    t_change = t_change, max_time = max_time)
+debug(PiecewiseChangepoint::rpwexp)
+library(survival)
+plot(survfit(Surv(time,status)~1, data = df))
+
+sum(df$time[which(df$time < 1)])/sum(df$status[which(df$time < 1 & df$status ==1)])
+recasted_df <- PiecewiseChangepoint::df_recast(df)
 
 
-Collapsing_Model <- collapsing.model(df,
+sum(recasted_df[which(as.numeric(rownames(recasted_df)) < 1), 2])/sum(recasted_df[which(as.numeric(rownames(recasted_df)) < 1), "time_diff_event"])
+
+sum(recasted_df[which(as.numeric(rownames(recasted_df)) >1), 2])/sum(recasted_df[which(as.numeric(rownames(recasted_df)) > 1), "time_diff_event"])
+
+
+Collapsing_Model <- PiecewiseChangepoint::collapsing.model(df,
                                      n.iter = 10000,
                                      burn_in = 5,
                                      n.chains = 2,
                                      alpha.hyper = 1,
                                      beta.hyper1 = 1,
                                      beta.hyper2 = 1)
-
+PiecewiseChangepoint:::rpwexp
 plot(Collapsing_Model)
 
 St_df <- get_Surv(Collapsing_Model, max_predict = 10)
