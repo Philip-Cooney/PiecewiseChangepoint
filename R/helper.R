@@ -899,7 +899,7 @@ print.changepoint <- function(object, chng.num = NULL, digits = min(3L, getOptio
 #' @examples \dontrun{
 #' mod.comp.jags <-fit_surv_models(df)
 #' }
-fit_surv_models2 <- function(df, max_predict = 10,
+fit_surv_models <- function(df, max_predict = 10,
                             n.iter.jags = 2000,
                             n.thin.jags = NULL,
                             n.burnin.jags = NULL,
