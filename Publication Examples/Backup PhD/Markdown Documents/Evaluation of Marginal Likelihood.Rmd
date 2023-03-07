@@ -1,0 +1,70 @@
+---
+title: "Evaluation of Marginal Likelihood"
+author: "Philip Cooney"
+date: "03 April 2020"
+output:
+  bookdown::pdf_document2:
+    fig_caption: yes
+    includes:
+      in_header: preamble-latex.tex
+  bookdown::word_document2: default
+  bookdown::html_document2: default
+link-citations: yes
+bibliography:
+- References_Gibs.bib
+
+---
+
+
+```{r, include = FALSE}
+
+setwd("D:/PhD offline/")
+source("C:/Users/phili/OneDrive/PhD/R codes/Functions Gibbs Markdown.R")
+source("Functions Reversible Jump.R")
+library("Brobdingnag")
+
+```
+In a previous section we discussed how the marginal likelihood of a piecewie exponential data segment is: 
+
+$$\frac{\Gamma(\alpha+n)}{\Gamma(\alpha)}\frac{\beta^\alpha}{(\beta+ \sum_{i = 1}^n t_i)^{\alpha+n}}$$
+
+Computational issues may arise for larger values of $n$ and $\sum t_i$ both the numerator and denominator will be very large numbers.
+
+For simplicity we assume $\alpha$ and $\beta$ are 1 which means the above equation can be rewritten as (note $\Gamma(1)= 1$):
+$$\frac{\Gamma(\alpha+n)}{(\beta+ \sum_{i = 1}^n t_i)^{\alpha+n}}$$
+Taking the logarithm of this expression we have
+
+$$\text{log}\bigg[\frac{\Gamma(\alpha+n)}{(\beta+ \sum_{i = 1}^n t_i)^{\alpha+n}}\bigg]$$
+which can be expressed as:
+
+$$\text{Ln }\Gamma(\alpha+n) -(\alpha+n)\text{log}(\beta+ \sum_{i = 1}^n t_i)$$ where $\text{Ln }\Gamma$ is the Log Gamma Function
+We have obtained the log of the probability which will be useful when we wish to calculate the ratio of the two probabilities for the reversible jump algorithm.
+
+$$ \frac{\text{Prob Propose}}{\text{Prob current}}= \frac{e^{\text{Log Prob Propose}}}{e^{\text{Log Prob Current}}} = e^{\text{Log Prob Propose-Log Prob Current}}$$
+which follows from the properties of exponents.
+
+We can use the integrate function in R to verify our results by writing a density function for the marginal likelihood expression $\frac{\Gamma(\alpha+n)}{\Gamma(\alpha)}\frac{\beta^\alpha}{(\beta+ \sum_{i = 1}^n t_i)^{\alpha+n}}$ and evaluate for $n = 1$ and $\sum t = 10$ with $\alpha, \beta = 1$
+
+```{r}
+
+
+dmarg.gamma <- function(x,n, time, alpha.hyper =1,beta.hyper =1){
+  dens<-((beta.hyper^alpha.hyper)/gamma(alpha.hyper))*(x^(alpha.hyper+n -1))*
+    exp(-(time+beta.hyper)*x)
+return(dens)
+}
+
+
+integrate(dmarg.gamma,n = 1, time = 10,
+          lower = 0,upper = Inf ) 
+exp(marg.lik.eval.log(cbind(1,10),1,1))
+
+```
+
+The equality of the results verifies the formula.
+
+
+
+
+
+

@@ -1,0 +1,55 @@
+---
+title: "Archive from Jackson"
+author: "Philip Cooney"
+date: "03 April 2020"
+output:
+  bookdown::pdf_document2:
+    fig_caption: yes
+    includes:
+      in_header: preamble-latex.tex
+  bookdown::word_document2: default
+  bookdown::html_document2: default
+link-citations: yes
+bibliography:
+- References_Gibs.bib
+
+---
+
+## Evaluation of Pseudo-Marginal Likelihood (To be amemded)
+
+*I have already evaulated the marginal likelihood, I will see how this approach compares the the RJMC*
+
+As seen in the previous section, Bayesian inference can evaluate the uncertainty in the location of changepoints for a model with a given number of changepoints (i.e. parameter uncertainty). A Bayesian framework can also be used to evaluate the uncertainty associated with the number of changepoints (i.e. model uncertainty). As discussed in [@Jackson.2010] the utility function $\boldsymbol U(\cdot)$ can be defined as the posterior predictive likelihood for $\boldsymbol y$, i.e. the likelihood integrated over the posterior distribution of the model parameters $\Theta$ as
+
+$$\mathbf U_P(\mathbf y|\mathbf x,\mathbf M_k) = \int f(\mathbf y |\theta,\mathbf M_k ) \pi(\theta|\mathbf x,\mathbf M_k)d\theta$$
+
+The expectation of this predictive utility for a replicate data set can be estimated, using only the sample data, by a cross-validatory predictive density termed PML.
+
+Reference K. Lomax. Business failures: another example of the analysis of failure data. JAm Stat Assoc. 1987;49:847–852
+
+$$f_P(\mathbf x|\mathbf M_k = \prod_if(x_i|))$$
+
+It differs in aim from the marginal likelihood in expression (5 addin!), assessing predictive ability rather than fidelity to the data. Gefland adn Dey 1994 (add in reference) described an importance sampling method for estimating the PML based on a single MCMC model fit, which avoids the need to refit the model with each observation exclued in turn. (For ease of notation in this section, the dependence on the model $M_k$ is omitted.)
+
+The full data posterio density $\pi (\theta| \mathbf x)$ is used as a proposal distribution to approximate the leave-one-out posterior density $\pi (\theta| \mathbf x_{(i)})$. Given an MCMC sample $\theta_1, \dots, \theta_N$ from the posterior of of $\theta$, the importance weights are then $w_{ir} = \pi(\theta_r| \mathbf x_{(i)})) / \pi(\theta_r| \mathbf x)  \propto 1/f(x_i | \theta_r)$, and the importance sampling estimate of $f(x_i | \mathbf x_{(i)})$ over the posterior sample:
+
+\begin{align*}
+f(x_i | \mathbf x_{(i)}) &\approx \sum_r w_{ir} f(x_i | \mathbf x_{(i)})/ \sum_r w_{ir} \\
+&= N/ \sum_r \frac{1}{f(x_i | \theta_r)} \\
+\end{align*}
+
+we can use the marginal likelihood to calculate the probability of a new data (actually just data(i)) point given the data (see Hoff pg 47). Basically the same as the marginal liklelhood which is actually the Lomax distribution.
+
+$$\frac{\beta^{\alpha'}}{(\beta' +t)^{\alpha' +1}}\alpha'$$
+
+#Calculating best predictive model
+
+To avoid the computation expense of refitting models to calculate the model selection probabilities, the Bayesian bootstrap method described by Vehtari and Lampine (2002) was used. Instead of sampling with replacement from $\mathbf x$, the Bayesian bootstrap samples sets of probabilities $q_i$ that the random variable $X$ underlying the data takes the value of each sample point $x_i$. In one bootstrap iteration, samples $q_i^{(\text{rep})}$ of $q_i$ are drawn from a "flat" Dirichlet distrution with all parameters 1. This is the psoterior distrution of _the disribution of X_, conditionally on the sample $\mathbf x$ and an improper prior (Rubin , 1981). The bootstrap replicate of the sample statistic is then computed by using the original data $\mathbf x$ with weights of $q_i^{(\text{rep})}$.
+
+For the log(PML) example, the log-predictive-ordinates for each point $x_i$ is:
+
+$$log{f_P(\mathbf x | M_k)} = \sum_{i= 1}^n log{f(x_i | \mathbf x_{(i)}, M_k)}$$ 
+
+where $n$ is the sample size. The Bayesian bootstrap replicate of the log(PML) is then
+
+$$log{f_P(\mathbf x | M_k)}^{\text(rep)} = n\sum_{i= 1}^n q_i^{\text(rep)}log{f(x_i | \mathbf x_{(i)}, M_k)}$$ 

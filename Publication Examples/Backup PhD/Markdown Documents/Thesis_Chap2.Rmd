@@ -1,0 +1,494 @@
+---
+title: "Simple Parametric and Piecewise Methods"
+author: "Philip Cooney"
+date: "16 September 2019"
+output:
+  bookdown::pdf_document2:
+    fig_caption: yes        
+    includes:  
+      in_header: preamble-latex.tex
+  bookdown::word_document2: default
+  bookdown::html_document2: default
+---
+Check Likeilhood plot switch labels
+
+
+Following this, I will provide background to a publically available dataset. This dataset will be used to illustrate some of the concepts discussed in the introduction. Distributional Assumpions (maybe see what censors need to be there to identify the appropriate distribution), Piecewise hazards
+
+```{r, echo =  FALSE, message=FALSE, warning = FALSE, results = 'hide'}
+
+#Websites to look up
+
+#https://www.earthdatascience.org/courses/earth-analytics/document-your-science/add-citations-to-rmarkdown-report/
+#https://bookdown.org/yihui/bookdown/figures.html#fn6
+#https://cran.r-project.org/web/views/Survival.html
+
+#Figure positioning 
+#https://stackoverflow.com/questions/16626462/figure-position-in-markdown-when-converting-to-pdf-with-knitr-and-pandoc
+
+#Useful Survival Resources
+
+#https://data.princeton.edu/wws509/notes/c7.pdf
+
+
+Laptop <- "Personal"
+
+if(Laptop == "Novartis"){
+
+trace(utils:::unpackPkgZip, quote(Sys.sleep(2)), at = which(grepl("Sys.sleep", body(utils:::unpackPkgZip), fixed = TRUE)))
+# set-up R libraries and read in data
+.libPaths( c( .libPaths(), "C:/Users/cooneph1/Desktop/R Library") )
+myPaths <- .libPaths()   # get the paths
+myPaths <- c(myPaths[3], myPaths[1])  # switch them
+.libPaths(myPaths)
+.libPaths()
+  
+}
+
+
+
+list.of.packages <- c("yaml", "rjags","meta", "gemtc", "Rglpk", "slam", "truncnorm","netmeta",
+                      "dplyr", "stargazer", "R2OpenBUGS","R2WinBUGS","xlsx","ggplot2", "forestplot", "tidyr",
+                      "gridExtra", "grid","lattice","igraph","ggrepel", "ggpubr","Cairo","stringr" ,"toOrdinal",
+                      "RColorBrewer", "naniar", "MCMCvis", "LaplacesDemon", "asaur", "flexsurv", "pch", "optimization",
+                      "graphics","KernSmooth","MVA", "plotly", "bookdown", "survminer", "muhaz", "hesim", "eha", "survival","bookdown", "purrr", "Brobdingnag")
+
+#Check to see if these are installed and install if not
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+
+#load the packages
+lapply(list.of.packages, require, character.only = TRUE)
+
+
+
+#Additional package
+
+#install.packages("webshot")
+#webshot::install_phantomjs()
+library(webshot)
+
+```
+
+
+```{r, echo =  FALSE, message=FALSE, results = 'hide'}
+#Initialize the packages if running from a Novartis Machine.
+#Latex
+#http://pages.stat.wisc.edu/~jgillett/371/RStudio/RMarkdown.pdf
+#https://www.calvin.edu/~rpruim/courses/s341/S17/from-class/MathinRmd.html
+#http://www.math.mcgill.ca/yyang/regression/RMarkdown/example.html
+##https://oeis.org/wiki/List_of_LaTeX_mathematical_symbols
+
+url.path <- "http://merlot.stat.uconn.edu/~mhchen/survbook/dataset/e1690.missing.dat"
+E1690.dat <- read.delim(url(url.path), header = T, sep="", skip=12, as.is=TRUE)
+#Drop PFS events with time equal zero
+E1690.dat <- E1690.dat[-which(E1690.dat$FAILTIME ==0),]
+
+#Convert to the correct notation for survival objects
+E1690.dat[which(E1690.dat$FAILCENS == 1),"FAILCENS"] <-0
+E1690.dat[which(E1690.dat$FAILCENS == 2),"FAILCENS"] <-1
+E1690.dat[which(E1690.dat$SURVCENS == 1),"SURVCENS"] <-0
+E1690.dat[which(E1690.dat$SURVCENS == 2),"SURVCENS"] <-1
+
+source("Analysis functions.R")
+
+```
+
+## Introduction to a publically available Cancer Dataset
+
+In order to consider the various issues in survival analysis it is useful (if not essential) to have real-world data. There a number of datasets which have survival outcomes, however, an ideal dataset has a large number of observations, information on covariates and multiple outcomes (i.e. PFS and OS). 
+
+The [E1690 dataset](http://merlot.stat.uconn.edu/~mhchen/survbook/) available online has many of these attributes. This dataset is a combination of two randomized control trials which evaluated the efficacy of high-dose Interferon alpha2b (HDI) for 1 year and low-dose interferon alpha2b (LDI) for 2 years versus Obs in high-risk (stage IIB and III) melanoma with replase free survival (RFS) and overall survival (OS) end points. The eariler trial E1684 observed a larger than expected treatment effect and as a result a second trial (E1690) was begun in 1991 to attempt to confirm the results of E1684. Further details are available in Kirkwood et al 2000.
+
+Covariates in the dataset include treatment (x1: IFN, OBS), age (x2), sex (xa), logarithm of Breslow depth (x4), logarithm of size of primary (xs), and type of primary tumor(x6). The dataset includes only those observations assigned to high dose interferon and observation arms. Time to event was available for both OS and RPS, however, for consitency I will refer to any relapse event as a progression event and therefore refer to this as PFS (progression free survival).
+
+## Descriptive analysis of the data
+
+Plotting the survial for both events of both arms provides an illustration that the inteferon group has a higher expected survival in the E1684 trial Figure \@ref(fig:KM-E1684). 
+
+```{r, echo=FALSE,warning=FALSE, results='hide'}
+#Need to turn the data into a Survival object, Event = 1 , censor = 0
+
+#Create survival objects
+fit.OS <- survfit(Surv(SURVTIME, SURVCENS)~TRT, 
+                  data = E1690.dat[which(E1690.dat$STUDY == "1684"),])
+fit.PFS <- survfit(Surv(FAILTIME, FAILCENS)~TRT, 
+                   data = E1690.dat[which(E1690.dat$STUDY == "1684"),])
+
+#Plot of Kaplan Meiers
+
+OS.obs1 <- as.numeric(fit.OS$strata[1])
+PFS.obs1 <- as.numeric(fit.PFS$strata[1])
+```
+
+
+
+```{r KM-E1684, fig.cap= 'PFS and OS outcomes in E1684 trial', out.width='80%', fig.asp=.75, fig.align='center',echo=FALSE,warning=FALSE, results='hide'}
+
+# All treatment and outcomes plotted together
+plot(fit.OS$time[1:OS.obs1],fit.OS$surv[1:OS.obs1],
+     col = "red", lty = 1, type = "l", ylim = c(0,1), main = "OS and PFS Survival",
+     xlab = "Time in years", ylab = "Survival")
+lines(fit.OS$time[OS.obs1+1:length(fit.OS$time)],fit.OS$surv[OS.obs1+1:length(fit.OS$time)],
+      col = "blue", lty = 1)
+lines(fit.PFS$time[1:PFS.obs1],fit.PFS$surv[1:PFS.obs1],
+      col = "darkred", lty = 2, type = "l")
+lines(fit.PFS$time[PFS.obs1+1:length(fit.PFS$time)],fit.PFS$surv[PFS.obs1+1:length(fit.PFS$time)],
+      col = "darkblue", lty = 2)
+legend("topright", legend = c("OS Trt 1 (OBS)", "OS Trt 2 (INF)", "PFS Trt 1 (OBS)", "PFS Trt 2 (INF)"),
+       col = c("red", "blue", "darkred", "darkblue"), lty = c(1,1,2,2), cex = 0.8)
+```
+
+Focusing in on the OS and PFS outcomes seperately (Figures \@ref(fig:KM-E1684-OS) & \@ref(fig:KM-E1684-PFS) respectively)
+ we can see censoring the presence of censoring denoted by the vertical tick marks and compute the log rank test. This test evaluates whether or not KM curves for two or more groups are statistically equivalent. 
+
+The pvalue is 0.064 suggesting that we do not have do not have evidence to indicate that the true (population) OS survival curves are different at a 5% significance level. However, the PFS survival curves are different at a 5% significane level.
+
+
+```{r KM-E1684-OS, fig.cap = 'OS outcomes in E1684 trial', echo = FALSE, out.width='80%', fig.asp=.75, fig.align='center',echo=FALSE,warning=FALSE, results='hide'}
+ggsurvplot(fit.OS, title = "OS survival", surv.median.line = "hv",
+            legend.title = "Treatment",
+            legend.labs = c("Obs", "INF"),
+ # Add p-value and tervals
+          pval = TRUE,
+          pval.method = TRUE,
+          conf.int = TRUE,
+ # Add risk table
+          risk.table = TRUE,
+        tables.height = 0.2,
+        tables.theme = theme_cleantable(),
+
+ # Color palettes. Use custom color: c("#E7B800", "#2E9FDF"),
+ # or brewer color (e.g.: "Dark2"), or ggsci color (e.g.: "jco")
+        palette = c("#E7B800", "#2E9FDF"),
+      ggtheme = theme_bw() # Change ggplot2 theme
+)
+
+```
+
+
+```{r KM-E1684-PFS, fig.cap = 'PFS outcomes in E1684 trial', echo = FALSE, out.width='80%', fig.asp=.75, fig.align='center',echo=FALSE,warning=FALSE, results='hide'}
+ggsurvplot(fit.PFS, title = "PFS survival", surv.median.line = "hv",
+            legend.title = "Treatment",
+            legend.labs = c("Obs", "INF"),
+ # Add p-value and tervals
+          pval = TRUE,
+          pval.method = TRUE,
+          conf.int = TRUE,
+ # Add risk table
+          risk.table = TRUE,
+        tables.height = 0.2,
+        tables.theme = theme_cleantable(),
+
+ # Color palettes. Use custom color: c("#E7B800", "#2E9FDF"),
+ # or brewer color (e.g.: "Dark2"), or ggsci color (e.g.: "jco")
+        palette = c("#E7B800", "#2E9FDF"),
+      ggtheme = theme_bw() # Change ggplot2 theme
+)
+
+```
+
+## Exploration of observed hazards
+
+The next feature to consider of this data is how the hazards behave. From the Kaplan Meier plots presented in the previous section it appears that the hazards decrease over time with the survival plot "levelling off" after around 4 to 5 years. One way to assess this is to plot the hazards over time. 
+
+In Figures \@ref(fig:Haz-E1684-OS) & \@ref(fig:Haz-E1684-PFS)(created using the pehaz function from the muhaz package in R), the time is divided into bins of equal width, and then estimates the hazard in each bin as the number of events $d_i$ in that bin divided by the number of patients at risk in each interval, $n_i$; the hazard for that interval is $h_i = \frac{d_i}{n_i}$. Check page 32 of collett for different approach
+
+```{r Haz-E1684-OS, fig.cap = 'PFS outcomes in E1684 trial', echo = FALSE, echo=FALSE,warning=FALSE, results='hide', out.width='80%', fig.asp=.75}
+
+trt.df <- E1690.dat[which( E1690.dat$TRT == 2 & E1690.dat$STUDY == "1684"),]
+
+#Scale is Years!
+hazard.OS <- harzard.plt(time.vec = trt.df$SURVTIME, cens.vec =  trt.df$SURVCENS, Outcome = "OS",
+            trt = "Interferon")
+
+```
+
+
+```{r Haz-E1684-PFS, fig.cap = 'PFS outcomes in E1684 trial', echo = FALSE, echo=FALSE,warning=FALSE, results='hide', out.width='80%', fig.asp=.75}
+
+#Scale is Years!
+hazard.PFS <-harzard.plt(time.vec = trt.df$FAILTIME, cens.vec =  trt.df$FAILCENS, Outcome = "PFS",
+            trt = "Interferon")
+```
+
+
+It is evident from the Hazard plots above, that the hazard functions (particularly the one month harzard) jumps around quite a bit from one interval to the next, which limits its utility in visualizing the hazard function. This behaviour is observed because within the shorter timeframe there may be periods where several events may occur at a similar time due to random chance followed by another period in which few events occur. Additionally for investigator assessed outcomes such as (some types of) PFS, patients may be assessed at particular intervals and therefore events may occur in clusters. 
+
+To aid visizualization of the hazard, we may compute a smooth hazard estimate. This smooth hazard is computed using a "kernel smoother".  A kernel is a function $K(u)$, which we center at each failure time. Typically we choose a smooth-shaped kernel, with the amount of smoothing controlled by a parameter $b$. The estimate of the hazard function is given by:
+
+
+$$ \hat{h}(t) = \frac{1}{b} \sum_{i = 1}^D K(\frac{t-t_i}{b})\frac{d_i}{t_i} $$
+
+where $t_1$ < $t_2$ < .... < $t_D$ are distinct ordered failure times, the subscript "( $i$)" in $t_i$ indicates that this is the $i$'th ordered failure time, $d_i$ is the number of deaths at time $t_i$ and $n_i$ is the number at risk at that time. 
+
+One method to define the Kernel is known as the "Epanechnikov" kernel where $K(u) = \frac{3}{4}(1-u^2)$ defined for $-1 \leq u \leq 1$, and zero elsewhere. In the above formula for the hazard, there is one kernel function placed at each failure time, scaled by the smoothing parameter $b$. Larger values of $b$ result in wider kernel functions, and
+hence more smoothing.
+
+Fitting of this smoothed hazard can be accomplished using the muhaz function (again from the muhaz package in R). Selection of the appropriate amount of smoothing is one of the most difficult problems in non-parametric hazard estimation. If the bandwidth parameter is too small, the estimate may gyrate widely. If too wide a parameter is chosen the hazard function may be too smooth to observe real variations in the hazard function over time. The "muhaz" function includes an automatic method for selecting a variable width bandwidth, so that for time regions with few events, a wider smoothing parameter is used than for time regions densely populated with events.
+
+In the muhaz package a number of grids are defined (default of 101) and the optimal bandwidth at a grid point is obtained by minimizing the local MSE (Mean square error) Muller and Wang 1994. Another option is "knn" - k nearest neighbors distance bandwidth based on  Gefeller and Dette (1992). [See also](https://www.math.utah.edu/~alberts/talks/KernelEstimation.pdf) 
+
+In summary the plots for both outcomes indicate that the hazard of an event decreases over time and for PFS outcome falls to zero at 6 years. Additionally we can use the smoothed hazard function is to obtain a smooth estimate of the survival function, using the relationship  $\widetilde{\ S(t)} = e^{-\int_{u=0}^t \hat{h}(u) \,du}$, in which the hazard is evaluated for each grid. These survival functions are presented in Figures \@ref(fig:Smo-Haz-E1684-OS) & \@ref(fig:Smo-Haz-E1684-PFS). Neither smoothed survival estimate provides a good fit to the data suggesting a loss of precision when smoothing the hazard. 
+
+```{r Smo-Haz-E1684-OS, fig.cap = 'PFS outcomes in E1684 trial', echo = FALSE, echo=FALSE,warning=FALSE, results='hide', out.width='80%', fig.asp=.75}
+
+smoothed.survival(hazard.OS, time.vec = trt.df$SURVTIME, cens.vec =  trt.df$SURVCENS, Outcome = "OS",
+            trt = "Interferon")
+
+```
+
+
+```{r Smo-Haz-E1684-PFS, fig.cap = 'PFS outcomes in E1684 trial', echo=FALSE,warning=FALSE, results='hide', out.width='80%', fig.asp=.75}
+
+smoothed.survival(hazard.PFS, time.vec = trt.df$FAILTIME, cens.vec =  trt.df$FAILCENS, Outcome = "PFS",
+            trt = "Interferon")
+
+```
+
+
+#Checking distributional assumptions 
+
+## Piecewise hazard models
+
+The methods used to up to this point to identify the expected survival and hazard are non-parametric. As these methods do not specify any functional form of the data, their assumptions are robust irrespective of the observed data, however, they cannot be used to make out of sample predictions. 
+
+One model which could be used to make predictions (or extrapolations) is the piecewise constant model. 
+
+Let $X_1, \dots, X_n$ dentote independent identically distributed survival times and $C_1$,......,$C_n$ be the censoring times which are assumed to be independent of $X$. We observed only the pairs $(T_i,\delta_i),i = 1,2, \dots,n$ where $T_i = min(X_i,C_i)$ and $\delta_i = 1$ if $X_i \leq C_i$ and zero otherwise.
+
+We could assume a number of intervals with $\tau_i$ indicating the time at which a new interval begins. Within each of these intervals we assume a constant hazard $\alpha_i$ between the time points $\tau_{j-1}$ and $\tau_j$.
+$$ \lambda(t)=\left\{
+                \begin{array}{ll}
+                  \alpha_1 & 0 \leq t < \tau_1 \\ 
+                  \alpha_2 & \tau_1 \leq t < \tau_2 \\
+                  \ .\\
+                  \ . \\
+                  \alpha_{K+1} & t \geq \tau_k
+                \end{array}
+              \right. $$
+
+Let $X(t)$ denote the number of deaths observed up to time t:
+
+$$X(t) = \sum_{i = 1}^n I(T_i < t)\delta_i$$
+For a given set of $\tau_i 's$  the maximum likelihood estimates (MLE's) of the parameters $\alpha_1$,...,$\alpha_k$ are given by:
+
+$$\hat{\alpha_1} = \frac{X_{(\tau_1 )}}{\sum_{i = 1}^n T_i \wedge \tau_1}$$
+
+$$\hat{\alpha_2} = \frac{X_{(\tau_2 )}-X_{(\tau_1 )}}{{\sum_{i = 1}^n T_i \wedge (\tau_2-\tau_1)}I(T_i > \tau_1)}$$
+$$\hat{\alpha_{k-1}} = \frac{X_{(\tau_{k-1})}-X_{(\tau_{k-2} )}}{{\sum_{i = 1}^n T_i \wedge (\tau_{k-1}-\tau_{k-2})}I(T_i > \tau_{k-2})} $$
+and $$\hat{\alpha_{k-1}} = \frac{n_u-X_{(\tau_{k-1} )}}{{\sum_{i = 1}^n (T_i -\tau_{k-1})}I(T_i > \tau_{k-1})}$$ where where $n_u$ is the total number of non-censored events.
+
+The log-Likelihood of this model is:
+
+$$ logL(\alpha_1,...,\alpha_k,\tau_1,...,\tau_{k-1}) = 
+X(\tau_1)log\alpha_1 + [X(\tau_2)-X(\tau_1)]log\alpha_2$$ $$+  [n_u - X(\tau_{k-1})]log\alpha_k - .. -\alpha_1\sum_{i = 1}^n(T_i \wedge \tau_1) - \alpha_2\sum_{i = 1}^n(T_i \wedge \tau_2 -\tau_1)I(T_i > \tau_1) - .. - \alpha_k\sum_{i = 1}^n(T_i - \tau_{k-1})I(T_i > \tau_{k-1}) $$
+
+Although strictly speaking this is a parameteric model, the model can accomodate any shaped hazard through the introduction of more frequent breakpoints. A piecewise exponential model fit to the Interferon arm of the E1984 dataset with 10 changepoints (coloured in green) is plotted in \@ref(fig:Piece-E1684-PFS) below. The model is fit using the pchreg package in R and then predictions were made by extrapolating the last hazard from the last interval (red line).     
+
+```{r Piece-E1684-PFS, fig.cap = 'PFS outcomes in E1684 trial', echo = FALSE, out.width='80%', fig.asp=.75, fig.align='center',echo=FALSE,warning=FALSE, results='hide'}
+
+piecewise.expo.freq <- pchreg(Surv(FAILTIME, FAILCENS)~TRT,data =trt.df, breaks =10)
+
+predict.piecewise(piecewise.model = piecewise.expo.freq, 
+                  max.predict = 12)
+
+```
+
+One of the key issues with piecewise models is indentifying the location and number of changepoints; if too few intervals are chosen, the model may fail to accurately capture the variation of the observed hazard while if too many are chosen the extrapolation may be unduly influenced by the final few observations. In the pchreg package the default behaviour (when the location of the changepoints are not supplied is to use the empirical quantiles of event times (i.e. time points are based on quantiles of events). In the following section I review several approaches that have been suggested to find the appropriate number of breakpoints and their locations.
+
+###Goodman et al
+
+[Goodman et al](https://biostats.bepress.com/cgi/viewcontent.cgi?article=1043&context=harvardbiostat) noted that the log-Likelihood for a given set of change points is:
+
+$$ logL(\tau_1,...,\tau_{k-1}) = X(\tau_1)log\left[\frac{X(\tau_1)}{\sum_{i = 1}^n T_i \wedge \tau_1}\right]+$$ $$+ [X(\tau_2)-X(\tau_1)]log \left[ \frac{X(\tau_2)-X(\tau_1)}{\sum_{i = 1}^n (T_i \wedge \tau_2-\tau_1)I(Ti>\tau_1)} \right]+...$$ $$+ [n_u-X(\tau_{k-1})]log \left[ \frac{n_u-X(\tau_{k-1})}{\sum_{i = 1}^n (T_i - \tau_{k-1})I(Ti>\tau_{k-1})} \right] - n_u$$
+Goodman et al used the Nelder-Mead optimization function to maximize the likelihood of this model. However, when I used this algorithm to maximize the log-likelihood I believe that the algorithm would get stuck at one of the many local maxima of the likelihood surface and therefore would be very sensitive to the choice of intial values. Figure \@ref(fig:LogLik-E1684-PFS) appears the support this assumption.
+```{r}
+optim(par=c(0.7, 2 ), fn=nelder.mead.piecewise.pchreg, method= "Nelder-Mead",
+      control=list(fnscale = -1),
+      time=trt.df$FAILTIME, status=trt.df$FAILCENS)
+
+optim(par=c(1, 3 ), fn=nelder.mead.piecewise.pchreg, method= "Nelder-Mead",
+      control=list(fnscale = -1),
+      time=trt.df$FAILTIME, status=trt.df$FAILCENS)
+
+
+```
+
+```{r , echo = FALSE, message=FALSE, warning=FALSE , results = 'hide'}
+result <- grid.search.piecewise.pchreg(min.break = 0.2,
+                      max.break = 7,
+                      grid.width = 0.25,
+                      num.breaks = 2,
+                      min.break.width = 1,
+                      time = trt.df$FAILTIME,
+                      status = trt.df$FAILCENS)
+
+```
+
+```{r LogLik-E1684-PFS, fig.cap = 'Log-Likelihood surface', echo = FALSE, out.width='80%', fig.asp=.75, fig.align='center',echo=FALSE,warning=FALSE}
+
+knitr::include_graphics("C:/Users/phili/OneDrive/PhD/Plots/Likelihood_Plot.png")
+```
+
+In order to evaluate the log-likelihood, I have used a grid search approach, whereby I evaluate the likelihood across a grid of timepoints and select the change point which maximizes the likelihood. 
+
+```{r}
+
+result <- result[[2]]
+result[which(result$Likelihood == max(result$Likelihood, na.rm = T)),]
+
+
+```
+
+### Zhang (Least squares approach)
+
+Another approach was suggested by [Zhang 2014](http://fau.digital.flvc.org/islandora/object/fau%3A13406/datastream/OBJ/view/Detection_of_multiple_change-points_in_hazard_models.pdf) in which he suggested that the function on page 56 be minimized. 
+
+I understand $Y_n^*(x_j)$ to be the average hazard as obtained from the Nelson Aalen cumulative hazard (based on Equation 5.4 on page 27) . My understanding is that $t_{in}$ is a potential change point and $tj$ is a time point at which the Nelson Aalen cumulative hazard is computed (i.e. it is computed at every event time). This is based on the information presented in the Equation for $Q(\Theta,x_i)$ for a single changepoint (pg 28). However in the second line and third line I do not know why the notation is changed to $x_{im}$?
+
+I tried to implement this function in R, however because of the grid search and the fact that it needs to use the Nelder Mead optimizer at every point it is quite slow. I assume that there are bugs in this as with grid values the optimal hazards are very low, but I haven't spend much more time trying to fix them as I don't know if this method is very useful compared to the Goodman approach. 
+
+```{r , echo = FALSE, message=FALSE, warning=FALSE , results = 'hide'}
+
+time <- trt.df$FAILTIME
+status <-  trt.df$FAILCENS
+
+#Set up dataset
+Cum_haz  <- nelson.aalen.haz(time, status)
+df <- data.frame(time = time, status = status, Cum_haz = Cum_haz)
+df$avg_haz <- Cum_haz/time
+plot(y = df$avg_haz, x = df$time)
+
+df <- df[-which(df$time == 0),]
+df <- df[order(df$time),]
+#df <- df[,-which(colnames(df)=="status")]
+
+change.point <- grid.search.hazard_multi(min.break = 0.1,
+                   max.break = 7,
+                   grid.width = 0.5,
+                   num.breaks = 2,
+                   min.break.width = 0.9,
+                   time = E1690.dat$SURVTIME,
+                   status = E1690.dat$SURVCENS)
+#remove chance of negative par values Check that it works!
+
+#Least squares solution
+change.point[[change.point[["min_square"]]]]
+
+
+```
+
+### Zhang (Counting proccess approach)
+
+Zhang also discusses a counting process approach which was first proposed by Chang et al 1994. They define $Y(x)$ (different to the average Nelson Aalen hazard) on pg 11, however, it also seems to be defined differently in Chang et al 1994. In any event I'm pretty sure that I implemented it incorrectly as the $Y(x)$ function should increase on the interval $(0,\tau]$ and decrease thereafter when $\alpha_2 > \alpha_1$, however it is clear from previous analysis that the hazards decrease and $\alpha_2 < \alpha_1$. Figure \@ref(fig:Zhang-CP) appears to indicate that $\alpha_2 > \alpha_1$.As per my understanding the first changepoint is the first point at which the function begins to decrease. In later chapters Zhang proposes extensions to this method to account for selection of multiple change points.
+
+```{r Zhang-CP, fig.cap = 'Counting process method', echo = FALSE, out.width='80%', fig.asp=.75, fig.align='center',echo=FALSE,warning=FALSE, results='hide'}
+df.nel_aalen <- data.frame(time = time, Cum_haz =Cum_haz )
+df.nel_aalen <- df.nel_aalen[order(df.nel_aalen$time),]
+
+#df.nel_aalen$quantile <- ecdf(df.nel_aalen$Cum_haz)
+
+last.Cum_haz <-  df.nel_aalen[nrow(df.nel_aalen),2] 
+last.time <-  df.nel_aalen[nrow(df.nel_aalen),1] 
+
+#df.nel_aalen <- df.nel_aalen[1:nrow(df.nel_aalen), ]
+
+#df.nel_aalen <- df.nel_aalen %>% mutate(Chang.func = (((last.Cum_haz-Cum_haz)/(last.time-time))
+#-(Cum_haz/time))*(time*(last.time -time)))
+
+pow <- 0.5
+
+#Used the formula in Chang 1994
+
+df.nel_aalen <- df.nel_aalen %>% mutate(Chang.func = last.Cum_haz*((time*(last.time -time))^pow)/(last.time -time)- Cum_haz*time*((time*(last.time-time))^pow)/((last.time -time)*time))
+
+plot(df.nel_aalen$time, df.nel_aalen$Chang.func, ylim = c(0,1), xlab = "time", ylab = "Y(x) function", main = "Counting Process")
+
+```
+### Summary
+
+Based on my initial research the most robust (albeit quite a computationally intense) approach is to evaluate the log-likelihood for a large number of change points. The combination of changepoints that maximizes the log-liklihood is the best estimate of the change point.
+
+Based on Goodman et al I wrote a piecewise.exponential function for which code is provided below:
+
+```{r}
+piecewise.exponential
+
+```
+
+
+The function produces the same log-likelihood as the one parameter exponential model, however the log-likelihood is different when comparing against the piecewise model from the pchreg package. Add in the comparison!
+
+```{r,echo = FALSE, message=FALSE, warning=FALSE , results = 'hide'}
+time <- trt.df$FAILTIME
+status <-  trt.df$FAILCENS
+
+#Test output against the exponential model
+
+flexsurvreg(Surv(time,  status)~1, dist = "exponential")$loglik 
+piecewise.exponential(time= time,status =status)
+
+#Test against the piecewise model
+break.inputs <- c(2,5)
+
+piecewise.model.pchreg <- pchreg(Surv(time,  status)~1, breaks = c(0,break.inputs, max(time)))
+my.piecewise.model.breaks <- piecewise.exponential(time, status, breakpoints = break.inputs)
+
+#Log-likelihood of my model
+my.piecewise.model.breaks
+#Summary of pchreg model
+summary(piecewise.model.pchreg)
+#breaks:the used cut points, with attributes 'h' indicating the length of each interval, and 'k' denoting the number of intervals.
+piecewise.model.pchreg$breaks
+head(piecewise.model.pchreg$lambda, n = 1)
+
+```
+
+
+Until I can validate my function I have used the pchreg function. Using the hesim package I have simulated 200 observations arising from a piecewise exponential distribution. Although the gridwise search The gridwise search was able to identify the correct change points.
+
+```{r, cache = TRUE}
+
+#https://cran.r-project.org/web/packages/hesim/hesim.pdf
+rate <- c(.6, 1, 0.2,2)
+n <- 200
+ratemat <- matrix(rep(rate, n/2), nrow = n,
+                  ncol = 4, byrow = TRUE)
+t <- c(0, 1, 2,4)
+samp <- rpwexp(n, ratemat, t)
+summary(samp)
+event <-  rep(1,n)
+
+result <- grid.search.piecewise.pchreg(min.break = 0.2,
+                      max.break = max(samp+0.1),
+                      grid.width = 0.2,
+                      num.breaks = 3,
+                      min.break.width = 0.5,
+                      time = as.vector(samp),
+                      status = as.vector(event))
+
+result[which(result$Likelihood == max(result$Likelihood, na.rm = T)),]
+
+
+result_quantile <-  mutate(result, quantile_rank = ntile(result$Likelihood,50)) %>% arrange(desc(Likelihood))
+
+```
+
+
+
+Next Steps:
+
+*Implement the spending function hypothesized by Goodman et al.
+*Perform some tests/ (maybe a simulation study) to assess the preformance of this approach in the presence of censoring.
+*Check what hazards are typically observed in a clincial trial and estimate the survival extrapolations (It will be interesting to see how misspecifications affect the extrapolation...which is what we are interested in)
+*Identify why the pchreg function produces a different log-likelihood than my function.
+*Implement the piecwise linear model which appeared to have better performance?
+
+
+
+Discuss some ideas for other research topics.
+
+
+
+

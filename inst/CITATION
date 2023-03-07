@@ -1,0 +1,16 @@
+citation_expert <- citHeader("To cite expertsurv in publications use:")
+citEntry(entry = "Article",
+         title        = "Change-point Detection for Piecewise Exponential Models",
+         author       = personList(as.person("Philip Cooney"),
+                                   as.person("Arthur White")),
+         journal      = "arXiv",
+         year         = "2021",
+         pages        = "1--21",
+         url          = "https://arxiv.org/abs/2112.03962",
+         
+         textVersion  =
+           paste("Philp Cooney, Arthur White (2021).",
+                 "Change-point Detection for Piecewise Exponential Models",
+                 "arXiv, 1-21.",
+                 "URL https://arxiv.org/abs/2112.03962")
+)
