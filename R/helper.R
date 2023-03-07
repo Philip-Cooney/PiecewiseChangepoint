@@ -1835,7 +1835,7 @@ compare_boot_sims <- function(piece_mod_orig,mod_parametric_orig, follow_up_data
     chng.num <- as.numeric(names(which.max(piece_mod_orig$prob.changepoint)))
   }
 
-  St_piecewise <- get_Surv(piece_mod_orig,chng.num = chng.num, max_predict =max_predict_val)
+  St_piecewise <- get_Surv(piece_mod_orig,chng.num = chng.num, max_predict =max_predict_val_mod)
   St_piecewise_mean <- rowMeans(St_piecewise)
   t <- seq(0, max_predict_val_mod, max_predict_val_mod/100)
 
