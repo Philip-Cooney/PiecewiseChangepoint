@@ -947,7 +947,7 @@ fit_surv_models <- function(df, max_predict = 10,
   require("rjags")
   require("R2jags")
   require("loo")
-  require("expertsurv")
+  require("rstan")
   
   # Inits function
   
