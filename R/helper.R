@@ -1918,9 +1918,10 @@ compare_boot_sims <- function(piece_mod_orig,mod_parametric_orig, follow_up_data
   }
 
   index_selc <- which(t <= max(follow_up_data$time))
+  surv_KM <- survival:::survmean(surv_km, 
+                    rmean = max(surv_km$time))
 
-
-  #browser()
+  rmean_KM <- as.numeric(surv_KM[[1]][ min(grep("rmean",names(surv_KM[[1]])))])
   AUC = c(
     integrate.xy(t[index_selc], Surv.expo[index_selc]),
     integrate.xy(t[index_selc], Surv.weibull[index_selc]),
@@ -1931,7 +1932,7 @@ compare_boot_sims <- function(piece_mod_orig,mod_parametric_orig, follow_up_data
     integrate.xy(t[index_selc], Surv.gen.gamma[index_selc]),
     integrate.xy(t[index_selc], Surv.rps[index_selc]),
     integrate.xy(t[index_selc], St_piecewise_mean[index_selc]),
-    as.numeric(survival:::survmean(surv_km, rmean =max(surv_km$time) )[[1]]["*rmean"]))
+    rmean_KM)
 
 
   model_names_full <- c("Exponential", "Weibull", "Gamma", "Log-Normal", "Log-Logistic", "Gompertz", "Generalized Gamma", "Royston-Parmar","Piecewise")
