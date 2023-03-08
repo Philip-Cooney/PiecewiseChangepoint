@@ -49,7 +49,8 @@ collapsing.model <- function(df,
                              alpha.hyper = 1,
                              beta.hyper1 = 1,
                              beta.hyper2 = 1,
-                             MLE = FALSE
+                             MLE = FALSE,
+                             seed.val = NULL
 ) {
   df <- df[order(df$time), ]
   m <- n.iter
@@ -58,7 +59,9 @@ collapsing.model <- function(df,
   time_diffs <- df_recast(df)
   n <- nrow(time_diffs)
   # Depreciated MLE should always be false
-
+if(is.numeric(seed.val)){
+set.seed(seed.val)  
+}
 
   changepoint <- k <- array(NA, dim = c(m, max.num.breaks, n.chains))
   beta_array <- array(NA, dim = c(m, 1, n.chains))
