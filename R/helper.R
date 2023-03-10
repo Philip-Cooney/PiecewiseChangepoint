@@ -507,11 +507,9 @@ plot.Survival <- function(St, max.num.post = 500, add.km, add.post,alpha.pos, en
       Survival = mean.Surv_df$survival[survival.close]
     )
     
-    plot_Surv <- plot_Surv +
-      geom_point(
-        data = break.points.Surv, aes(x = time, Survival),
-        shape = 23, fill = "green", inherit.aes = F
-      )
+    plot_Surv <- plot_Surv + geom_point(data = break.points.Surv, 
+                                        aes(x = time, Survival), shape = 23, fill = "green", color="darkred", size = 5, 
+                                        inherit.aes = F)
   }
   
   if (add.km) {
