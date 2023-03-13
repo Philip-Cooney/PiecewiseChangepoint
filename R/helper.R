@@ -94,45 +94,30 @@ rpwexp <- function(n, lam, s){
 }
 
 
-compare_dco <- function(all_surv_mods, old_dco, new_dco, km_risk = 0.1){
-  
+compare_dco <-function (all_surv_mods, old_dco, new_dco, km_risk = 0.1){
   result.km_old <- survfit(Surv(time, status) ~ 1, data = old_dco)
-  
-  if(!is.null(km_risk)){
+  if (!is.null(km_risk)) {
     max_time <- result.km_old$time[max(which(result.km_old$n.risk/result.km_old$n >= km_risk))]
-    
-    old_dco <- old_dco %>% mutate(status = ifelse(time > max_time, 0, status),
-                                  time = ifelse(time > max_time, max_time, time))
-    
-    
-    for(i in 3:5){
-      all_surv_mods$plot_Surv_all[["layers"]][[i]]$aes_params$colour <- "white"
-    }
-    
-    
   }
   
-  
-  
-  
-  plot_all <- add_km(all_surv_mods$plot_Surv_all, old_dco, colour = "grey")
   result.km <- survfit(Surv(time, status) ~ 1, data = new_dco)
-  km.data <- data.frame(cbind(result.km[[c("time")]], result.km[[c("surv")]], result.km[[c("upper")]], result.km[[c("lower")]]))
+  km.data <- data.frame(cbind(result.km[[c("time")]], result.km[[c("surv")]], 
+                              result.km[[c("upper")]], result.km[[c("lower")]]))
   colnames(km.data) <- c("time", "survival", "upper", "lower")
-  
-  if(is.null(km_risk)){
-    km.data <- km.data %>%
-      filter(time >= max(old_dco$time))
-  }else{
-    km.data <- km.data %>%
-      filter(time >= max_time)
+  if (is.null(km_risk)) {
+    km.data <- km.data %>% filter(time >= max(old_dco$time))
   }
-  
-  plot_all +
-    geom_step(data = km.data, aes(x = time, y = survival),colour = "black", inherit.aes = F) +
-    geom_step(data = km.data, aes(x = time, y = upper), colour = "black",linetype = "dashed", inherit.aes = F) +
-    geom_step(data = km.data, aes(x = time, y = lower), colour = "black", linetype = "dashed", inherit.aes = F)
+  else {
+    km.data <- km.data %>% filter(time >= max_time)
+  }
+  all_surv_mods$plot_Surv_all + geom_step(data = km.data, aes(x = time, y = survival), 
+                                          colour = "black", inherit.aes = F) + geom_step(data = km.data, 
+                                                                                         aes(x = time, y = upper), colour = "black", linetype = "dashed", 
+                                                                                         inherit.aes = F) + geom_step(data = km.data, aes(x = time, 
+                                                                                                                                          y = lower), 
+                                                                                                                      colour = "black", linetype = "dashed", inherit.aes = F)
 }
+
 
 
 
@@ -427,9 +412,12 @@ index.loc <- function(index, k.slice) {
 #' plot(Collapsing_Model, add.post = F)
 #' plot(Collapsing_Model, type = "hazard")}
 plot.changepoint <- function (object, type = "survival", chng.num = "all", add.km = T, 
-                              max_predict = 10, add.post = T, alpha.pos = NULL, t_pred = NULL, ...){
+                              max_predict = 10, add.post = T, alpha.pos = NULL, t_pred = NULL,
+                              final_chng_only =F,col_km = "black",km_risk = NULL,
+                              ...){
   if (type == "survival") {
-    St <- get_Surv(object, chng.num = chng.num, max_predict = max_predict, time = t_pred)
+    St <- get_Surv(object, chng.num = chng.num, max_predict = max_predict, 
+                   time = t_pred)
     return(plot.Survival(St, add.km = add.km, add.post = add.post, 
                          alpha.pos = alpha.pos))
   }
@@ -438,84 +426,70 @@ plot.changepoint <- function (object, type = "survival", chng.num = "all", add.k
   }
 }
 
-plot.Survival <- function(St, max.num.post = 500, add.km, add.post,alpha.pos, env = parent.frame()) {
+
+plot.Survival<- function (St, max.num.post = 500, add.km, add.post, alpha.pos, 
+                          env = parent.frame(), final_chng_only = F,col_km = "black", km_risk = NULL){
   nSims <- ncol(St)
   time <- as.numeric(rownames(St))
-  
-  mean.Surv_df <- data.frame(
-    survival = apply(St, 1, FUN = mean),
-    time = time
-  )
-  mod_quantile_df <- data.frame(cbind(time, t(apply(St, 1, FUN = quantile, c(0.025, 0.975)))))
-  
-  
+  mean.Surv_df <- data.frame(survival = apply(St, 1, FUN = mean), 
+                             time = time)
+  mod_quantile_df <- data.frame(cbind(time, t(apply(St, 1, 
+                                                    FUN = quantile, c(0.025, 0.975)))))
   colnames(mod_quantile_df) <- c("time", "lower", "upper")
-  
-  
-  Surv.plot <- data.frame(
-    Survival = c(unlist(St)),
-    time = rep(time, nSims),
-    id = rep(1:nSims, each = length(time))
-  )
-  
+  Surv.plot <- data.frame(Survival = c(unlist(St)), time = rep(time, 
+                                                               nSims), id = rep(1:nSims, each = length(time)))
   if (max.num.post < nSims) {
     post_id <- sample(1:nSims, size = max.num.post)
     Surv.plot <- dplyr::filter(Surv.plot, id %in% post_id)
   }
-  
-  
-  plot_Surv <- ggplot(data = Surv.plot, mapping = aes(x = time, y = Survival, group = id)) +
-    geom_line(data = mean.Surv_df, aes(x = time, y = survival), size = 1, inherit.aes = F, colour = "purple") +
-    scale_y_continuous(breaks = seq(0, 1, by = 0.1), expand = c(0, 0)) +
-    scale_x_continuous(expand = c(0, 0)) +
-    annotate(
-      geom = "segment", x = seq(0, max(time), max(time)/50), xend = seq(0, max(time), max(time)/50),
-      y = 0, yend = 0.01
-    ) +
-    theme_classic()
-  
+  plot_Surv <- ggplot(data = Surv.plot, mapping = aes(x = time, 
+                                                      y = Survival, group = id)) + geom_line(data = mean.Surv_df, 
+                                                                                             aes(x = time, y = survival), size = 1, inherit.aes = F, 
+                                                                                             colour = "purple") + scale_y_continuous(breaks = seq(0,1, by = 0.1),
+                                                                                                                                     expand = c(0, 0)) + 
+    scale_x_continuous(expand = c(0,0)) + annotate(geom = "segment", x = seq(0, max(time),max(time)/50), xend = seq(0, max(time), max(time)/50),
+                                                   y = 0, yend = 0.01) + theme_classic()
   if (add.post == T) {
-    if(is.null(alpha.pos)){
+    if (is.null(alpha.pos)) {
       alpha.pos <- 0.025
-    }else{
+    }
+    else {
       alpha.pos <- alpha.pos
     }
-    plot_Surv <- plot_Surv +
-      geom_line(data = mod_quantile_df, aes(x = time, y = lower), linetype = "dashed", size = 1, inherit.aes = F, colour = "grey") +
-      geom_line(data = mod_quantile_df, aes(x = time, y = upper), linetype = "dashed", size = 1, inherit.aes = F, colour = "grey") +
-      geom_line(size = 0.1, alpha =  alpha.pos, colour = "red")
+    plot_Surv <- plot_Surv + geom_line(data = mod_quantile_df, 
+                                       aes(x = time, y = lower), linetype = "dashed", size = 1, 
+                                       inherit.aes = F, colour = "grey") + 
+      geom_line(data = mod_quantile_df, aes(x = time, y = upper), linetype = "dashed", size = 1, 
+                inherit.aes = F, colour = "grey") + geom_line(size = 0.1,alpha = alpha.pos, colour = "red")
   }
-  
-  
-  
   if (env$chng.num != "all" && env$chng.num != 0) {
     k <- env$object$k.stacked
     num.changepoints <- unlist(apply(k, 1, function(x) {
       length(na.omit(x))
     }))
-    k_curr <- data.frame(k[which(num.changepoints == env$chng.num), 1:env$chng.num])
+    k_curr <- data.frame(k[which(num.changepoints == env$chng.num), 
+                           1:env$chng.num])
     df <- env$object$df
-    df_event <- unique(df[which(df$status == 1), c("status", "time")])
-    
-    time.break <- df_event[apply(k_curr, 2, FUN = mean), "time"]
+    df_event <- unique(df[which(df$status == 1), c("status", 
+                                                   "time")])
+    time.break <- df_event[apply(k_curr, 2, FUN = mean), 
+                           "time"]
     survival.close <- sapply(time.break, FUN = function(x) {
       which.min(abs(mean.Surv_df$time - x))
     })
+    break.points.Surv <- data.frame(time = mean.Surv_df$time[survival.close], Survival = mean.Surv_df$survival[survival.close])
     
-    break.points.Surv <- data.frame(
-      time = time.break,
-      Survival = mean.Surv_df$survival[survival.close]
-    )
+    if(env$final_chng_only){
+      break.points.Surv <- break.points.Surv[nrow(break.points.Surv),,drop = F]
+    }
     
     plot_Surv <- plot_Surv + geom_point(data = break.points.Surv, 
-                                        aes(x = time, Survival), shape = 23, fill = "green", color="darkred", size = 5, 
-                                        inherit.aes = F)
+                                        aes(x = time, Survival), shape = 23, fill = "green", 
+                                        color = "darkred", size = 5, inherit.aes = F, stroke  = 2.5)
   }
-  
   if (add.km) {
-    plot_Surv <- add_km(plot_Surv, env$object$df)
+    plot_Surv <- add_km(plot_Surv, env$object$df, colour = env$col_km, km_risk  = env$km_risk)
   }
-  
   return(plot_Surv)
 }
 
@@ -801,16 +775,28 @@ get.loglik_ind <- function(df,lambda_df,changepoint_df ){
 
 
 
-add_km <- function(plt, df, colour = "black") {
+add_km <- function (plt, df, colour = "black", km_risk = NULL){
   result.km <- survfit(Surv(time, status) ~ 1, data = df)
-  km.data <- data.frame(cbind(result.km[[c("time")]], result.km[[c("surv")]], result.km[[c("upper")]], result.km[[c("lower")]]))
+  km.data <- data.frame(cbind(result.km[[c("time")]], result.km[[c("surv")]], 
+                              result.km[[c("upper")]], result.km[[c("lower")]]))
   colnames(km.data) <- c("time", "survival", "upper", "lower")
   
-  plt +
-    geom_step(data = km.data, aes(x = time, y = survival),colour = colour, inherit.aes = F) +
-    geom_step(data = km.data, aes(x = time, y = upper), colour = colour,linetype = "dashed", inherit.aes = F) +
-    geom_step(data = km.data, aes(x = time, y = lower), colour = colour, linetype = "dashed", inherit.aes = F)
+  
+  if (!is.null(km_risk)) {
+    max_time <- result.km$time[max(which(result.km$n.risk/result.km$n >= 
+                                           km_risk))]
+  }
+  
+  km.data <- km.data %>% filter(time <= max_time)
+  
+  plt + geom_step(data = km.data, aes(x = time, y = survival), 
+                  colour = colour, inherit.aes = F) + geom_step(data = km.data, 
+                                                                aes(x = time, y = upper), colour = colour, linetype = "dashed", 
+                                                                inherit.aes = F) + 
+    geom_step(data = km.data, aes(x = time,y = lower), colour = colour, linetype = "dashed", inherit.aes = F)+
+    geom_vline(xintercept = max_time, linetype = "dotted")
 }
+
 
 get_Surv <- function(object, chng.num = "all", max_predict = NULL, time = NULL) {
   
@@ -1282,32 +1268,26 @@ fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.ja
 #' @md
 compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.best = 3, 
                                n.iter.jags = 2000, n.thin.jags = NULL, n.burnin.jags = NULL, 
-                               gof = "WAIC", inc_waic = TRUE, km_risk = 0.1,
-                               gmp_haz_df = NULL, 
-                               gpm_post_data = TRUE){
-  
+                               gof = "WAIC", inc_waic = TRUE, km_risk = 0.1, gmp_haz_df = NULL, 
+                               gpm_post_data = TRUE,  col_km = "black"){ 
   df <- object$df
-  #Warn user if max predict is longer than time and change max predict 
-  
-  if(!is.null(gmp_haz_df)){
-    gmp_haz_df[nrow(gmp_haz_df) + 1,] <- 0 #zero hazard at time zero
-    
-    if(max(gmp_haz_df$time) < max_predict){
+  if (!is.null(gmp_haz_df)) {
+    gmp_haz_df[nrow(gmp_haz_df) + 1, ] <- 0
+    if (max(gmp_haz_df$time) < max_predict) {
       stop("You are predicting survival beyond the time that you have provided general population mortaility")
     }
-    
-    gmp_haz_df <- gmp_haz_df%>% arrange(time) %>% filter(time <= max_predict)
-    
-    
-    if(gpm_post_data){
-      gmp_haz_df[which(gmp_haz_df$time <= max(df$time)),"hazard"] <- 0 #GMP is zero within trial
+    gmp_haz_df <- gmp_haz_df %>% arrange(time) %>% filter(time <= 
+                                                            max_predict)
+    if (gpm_post_data) {
+      gmp_haz_df[which(gmp_haz_df$time <= max(df$time)), 
+                 "hazard"] <- 0
     }
     gmp_haz_df$Cum_Haz_gmp <- cumsum(gmp_haz_df$hazard)
     t_pred <- gmp_haz_df$time
-  }else{
-    t_pred <- seq(0,max_predict, length.out = 100)
   }
-  
+  else {
+    t_pred <- seq(0, max_predict, length.out = 100)
+  }
   cat("Evaluating Individual log-likelihood for changepoint model \n ... can take several minutes")
   log.lik.piece <- get.loglik(object$df, object$lambda, object$changepoint)
   num.chng <- apply(object$k.stacked, 1, function(x) {
@@ -1318,7 +1298,8 @@ compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.
   log.lik.piece_most_prob <- log.lik.piece[which(num.chng == 
                                                    model_most_prob), ]
   if (chng.num != "all") {
-    log.lik.piece <- log.lik.piece[which(num.chng == chng.num),  ]
+    log.lik.piece <- log.lik.piece[which(num.chng == chng.num), 
+    ]
   }
   indiv.lik.piece <- exp(log.lik.piece)
   PML.indiv.piece <- 1/indiv.lik.piece
@@ -1329,14 +1310,9 @@ compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.
     var(rowSums(log.lik.piece_most_prob))
   AIC_piece <- -2 * LL_max_piece + 2 * num.param_piece
   BIC_piece <- -2 * LL_max_piece + num.param_piece * log(sum(df$status))
-  
   jags_output <- fit_surv_models(df, max_predict = max_predict, 
                                  n.iter.jags, n.thin.jags, n.burnin.jags, gof = gof, 
-                                 inc_waic = inc_waic,
-                                 t_pred = t_pred)
-  
-  
-  
+                                 inc_waic = inc_waic, t_pred = t_pred)
   piecewise.mod.fit <- data.frame(Model = "Piecewise Exponential", 
                                   minustwo_logPML = minus2logPML.piece, WAIC = WAIC.piece, 
                                   AIC = AIC_piece, BIC = BIC_piece)
@@ -1344,10 +1320,8 @@ compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.
   colnames(mod.comp) <- c("Model", "-2log(PML)", "WAIC", "AIC", 
                           "BIC")
   plot_surv <- plot.changepoint(object, add.post = F, chng.num = chng.num, 
-                                max_predict = max_predict, t_pred = t_pred)
-  
-  
-  
+                                max_predict = max_predict, t_pred = t_pred, km_risk = km_risk,
+                                col_km = col_km)
   df_surv_expo <- data.frame(Surv = jags_output$jags.surv$Surv.expo, 
                              t_pred)
   df_surv_weib <- data.frame(Surv = jags_output$jags.surv$Surv.weib, 
@@ -1364,46 +1338,27 @@ compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.
                                   t_pred)
   df_surv_rps <- data.frame(Surv = jags_output$jags.surv$Surv.rps)
   colnames(df_surv_rps) <- c("t_pred", "Surv")
-  df_surv_vec <-  c("df_surv_expo", "df_surv_weib", "df_surv_gamma","df_surv_llogis",
-                    "df_surv_lnorm", "df_surv_gomp", "df_surv_gen.gamma", "df_surv_rps")
-  
-  if(!is.null(gmp_haz_df)){
-    
-    plot_surv[["layers"]][[1]]$data <-  plot_surv[["layers"]][[1]]$data %>% mutate(Cum_Haz_surv = -log(survival)) %>%
-      left_join(gmp_haz_df, by = "time") %>%
-      mutate(survival = exp(-(Cum_Haz_surv+Cum_Haz_gmp))) %>% select(survival, time)
-    #Don't know why but plot_surv2 will change plot_surv!! -- Anyway it is correct
-    # plot_surv2 <- plot_surv
-    #   
-    # plot_surv2[["layers"]][[1]]$data <-  plot_surv2[["layers"]][[1]]$data %>% mutate(Cum_Haz_surv = -log(survival)) %>%
-    #   left_join(gmp_haz_df, by = "time") %>%
-    #   mutate(survival = exp(-(Cum_Haz_surv+Cum_Haz_gmp*100))) %>% select(survival, time)
-    # 
-    # cbind(plot_surv2[["layers"]][[1]]$data$survival== plot_surv[["layers"]][[1]]$data$survival)
-    
-    
-    for(q in 1:length(df_surv_vec)){
+  df_surv_vec <- c("df_surv_expo", "df_surv_weib", "df_surv_gamma", 
+                   "df_surv_llogis", "df_surv_lnorm", "df_surv_gomp", "df_surv_gen.gamma", 
+                   "df_surv_rps")
+  if (!is.null(gmp_haz_df)) {
+    plot_surv[["layers"]][[1]]$data <- plot_surv[["layers"]][[1]]$data %>% 
+      mutate(Cum_Haz_surv = -log(survival)) %>% left_join(gmp_haz_df, 
+                                                          by = "time") %>% mutate(survival = exp(-(Cum_Haz_surv + 
+                                                                                                     Cum_Haz_gmp))) %>% select(survival, time)
+    for (q in 1:length(df_surv_vec)) {
       df_temp <- get(df_surv_vec[q])
-      
-      df_temp <- df_temp %>%left_join(gmp_haz_df, by = c('t_pred'='time')) %>%
-        mutate(Cum_Haz_surv = -log(Surv), 
-               Surv = exp(- (Cum_Haz_surv +Cum_Haz_gmp)))%>% 
-        select(Surv, t_pred)
-      
-      assign(df_surv_vec[q],df_temp)
+      df_temp <- df_temp %>% left_join(gmp_haz_df, by = c(t_pred = "time")) %>% 
+        mutate(Cum_Haz_surv = -log(Surv), Surv = exp(-(Cum_Haz_surv + 
+                                                         Cum_Haz_gmp))) %>% select(Surv, t_pred)
+      assign(df_surv_vec[q], df_temp)
     }
-    
   }
-  
-  
-  
   mu_surv_list <- list()
-  
-  for(q in 1:length(df_surv_vec)){
+  for (q in 1:length(df_surv_vec)) {
     mu_surv_list[[q]] <- get(df_surv_vec[q])
   }
-  mu_surv_list[[length(df_surv_vec)+1]] <- plot_surv[["layers"]][[1]]$data
-  
+  mu_surv_list[[length(df_surv_vec) + 1]] <- plot_surv[["layers"]][[1]]$data
   df_order <- c("df_surv_expo", "df_surv_weib", "df_surv_gamma", 
                 "df_surv_lnorm", "df_surv_llogis", "df_surv_gomp", "df_surv_gen.gamma", 
                 "df_surv_rps")
@@ -1428,7 +1383,8 @@ compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.
     result.km <- survfit(Surv(time, status) ~ 1, data = df)
     max_time <- result.km$time[max(which(result.km$n.risk/result.km$n >= 
                                            km_risk))]
-  } else {
+  }
+  else {
     max_time <- max(df$time)
   }
   plot_Surv_all <- plot_surv + scale_color_manual(values = colors[col_selc]) + 
@@ -1436,7 +1392,8 @@ compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.
     theme_classic() + theme(legend.position = c(0.9, 0.8)) + 
     geom_vline(xintercept = max_time, linetype = "dotted")
   return(list(mod.comp = mod.comp, jag.models = jags_output$jags.models, 
-              jags.surv = jags_output$jags.surv, plot_Surv_all = plot_Surv_all, mu_surv_list = mu_surv_list))
+              jags.surv = jags_output$jags.surv, plot_Surv_all = plot_Surv_all, 
+              mu_surv_list = mu_surv_list))
 }
 
 
@@ -1575,4 +1532,3 @@ compare_boot_sims <- function (mod_parametric_orig, follow_up_data) {
   mod_compfinal <- mod_compfinal[order(mod_compfinal$AUC_diff),] %>% mutate_if(is.numeric, round, digits = 2)
   mod_compfinal
 }
-
