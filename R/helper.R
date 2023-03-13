@@ -1271,7 +1271,7 @@ fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.ja
 compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.best = 3, 
                                n.iter.jags = 2000, n.thin.jags = NULL, n.burnin.jags = NULL, 
                                gof = "WAIC", inc_waic = TRUE, km_risk = 0.1, gmp_haz_df = NULL, 
-                               gpm_post_data = TRUE,  col_km = "black"){ 
+                               gpm_post_data = TRUE,  col_km = "black", final_chng_only  = FALSE){ 
   df <- object$df
   if (!is.null(gmp_haz_df)) {
     gmp_haz_df[nrow(gmp_haz_df) + 1, ] <- 0
@@ -1323,7 +1323,7 @@ compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.
                           "BIC")
   plot_surv <- plot.changepoint(object, add.post = F, chng.num = chng.num, 
                                 max_predict = max_predict, t_pred = t_pred, km_risk = km_risk,
-                                col_km = col_km)
+                                col_km = col_km,final_chng_only = final_chng_only)
   df_surv_expo <- data.frame(Surv = jags_output$jags.surv$Surv.expo, 
                              t_pred)
   df_surv_weib <- data.frame(Surv = jags_output$jags.surv$Surv.weib, 
