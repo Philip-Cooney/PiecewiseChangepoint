@@ -785,9 +785,11 @@ add_km <- function (plt, df, colour = "black", km_risk = NULL){
   if (!is.null(km_risk)) {
     max_time <- result.km$time[max(which(result.km$n.risk/result.km$n >= 
                                            km_risk))]
+	  km.data <- km.data %>% filter(time <= max_time)									   
+										   
   }
   
-  km.data <- km.data %>% filter(time <= max_time)
+
   
   plt + geom_step(data = km.data, aes(x = time, y = survival), 
                   colour = colour, inherit.aes = F) + geom_step(data = km.data, 
