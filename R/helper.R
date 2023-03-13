@@ -775,28 +775,28 @@ get.loglik_ind <- function(df,lambda_df,changepoint_df ){
 
 
 
+
 add_km <- function (plt, df, colour = "black", km_risk = NULL){
   result.km <- survfit(Surv(time, status) ~ 1, data = df)
   km.data <- data.frame(cbind(result.km[[c("time")]], result.km[[c("surv")]], 
                               result.km[[c("upper")]], result.km[[c("lower")]]))
   colnames(km.data) <- c("time", "survival", "upper", "lower")
-  
-  
   if (!is.null(km_risk)) {
     max_time <- result.km$time[max(which(result.km$n.risk/result.km$n >= 
                                            km_risk))]
-	  km.data <- km.data %>% filter(time <= max_time)									   
-										   
+    km.data <- km.data %>% filter(time <= max_time)
   }
   
-
-  
-  plt + geom_step(data = km.data, aes(x = time, y = survival), 
-                  colour = colour, inherit.aes = F) + geom_step(data = km.data, 
-                                                                aes(x = time, y = upper), colour = colour, linetype = "dashed", 
-                                                                inherit.aes = F) + 
-    geom_step(data = km.data, aes(x = time,y = lower), colour = colour, linetype = "dashed", inherit.aes = F)+
-    geom_vline(xintercept = max_time, linetype = "dotted")
+  plt <- plt + geom_step(data = km.data, aes(x = time, y = survival), 
+                         colour = colour, inherit.aes = F) + geom_step(data = km.data, 
+                                                                       aes(x = time, y = upper), colour = colour, linetype = "dashed", 
+                                                                       inherit.aes = F) + 
+    geom_step(data = km.data, aes(x = time,y = lower), colour = colour, linetype = "dashed", inherit.aes = F) 
+  if (!is.null(km_risk)) {
+    plt+geom_vline(xintercept = max_time, linetype = "dotted")
+  }else{
+    plt
+  }
 }
 
 
