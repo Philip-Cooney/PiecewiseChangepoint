@@ -1151,8 +1151,8 @@ fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.ja
     temp_gamma <- rstan::extract(get(paste0("rps.", i)), 
                                  pars = "gamma")[["gamma"]]
     LL_rps <- apply(temp_gamma, 1, function(x) {
-      dsurvspline(x = df$time, gamma = x, knots = knots, 
-                  log = T) * df$status + psurvspline(q = df$time, 
+      flexsurv::dsurvspline(x = df$time, gamma = x, knots = knots, 
+                  log = T) * df$status + flexsurv::psurvspline(q = df$time, 
                                                      gamma = x, knots = knots, lower.tail = FALSE, 
                                                      log.p = T) * (1 - df$status)
     })
