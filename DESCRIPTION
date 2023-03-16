@@ -3,7 +3,7 @@ Type: Package
 Title: Piecewise Exponential Models with Unknown Change-points
 Version: 1.0
 Date: 2021-09-01
-Authors@R: person("Anon", "Anon", email = "phcooney@tcd.ie",
+Authors@R: person("Anon", "Anon", email = "anon@anon",
                   role = c("aut", "cre"),
                   comment = c(ORCID = "007"))
 Description: An implementation of the piecewise exponential models with unknown change-points using a Bayesian framework. Also provides methods to compare against other commonly used parametric survival models.
