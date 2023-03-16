@@ -1447,18 +1447,14 @@ plot.pos_changepoint <- function(obj, breaks = NULL, probs = c(0.025, 0.975)){
 }
 
 
-compare_boot_sims <- function (mod_parametric_orig, follow_up_data) {
-  
-  t <- mod_parametric_orig$mu_surv_list[[1]][,2]
+compare_boot_sims <- function (mod_parametric_orig, follow_up_data){
+  t <- mod_parametric_orig$mu_surv_list[[1]][, 2]
   mod_names <- c("expo", "weibull", "gamma", "llogis", "lnorm", 
                  "gomp", "gen.gamma", "rps", "piecewise")
-  
-  
   for (i in 1:length(mod_names)) {
-    assign(paste0("Surv.", mod_names[i]), mod_parametric_orig$mu_surv_list[[i]][,1])
-    
+    assign(paste0("Surv.", mod_names[i]), 
+           mod_parametric_orig$mu_surv_list[[i]][,grep("Surv|survival",colnames(mod_parametric_orig$mu_surv_list[[i]]))])
   }
-  
   n.boots <- 1000
   bs <- sjstats::bootstrap(follow_up_data, n.boots)
   AUC_diff <- AUC_diff2 <- matrix(nrow = n.boots, ncol = 10)
@@ -1490,25 +1486,29 @@ compare_boot_sims <- function (mod_parametric_orig, follow_up_data) {
     t_eval <- !is.na(surv_km_time)
     AUC_true[b] <- integrate.xy(t[t_eval], surv_km_time[t_eval])
     AUC_diff[b, ] = abs(c(integrate.xy(t[t_eval], Surv.expo[t_eval]), 
-                          integrate.xy(t[t_eval], Surv.weibull[t_eval]),
-                          integrate.xy(t[t_eval], Surv.gamma[t_eval]),
-                          integrate.xy(t[t_eval],Surv.lnorm[t_eval]), 
-                          integrate.xy(t[t_eval],Surv.llogis[t_eval]),
-                          integrate.xy(t[t_eval],Surv.gomp[t_eval]), 
-                          integrate.xy(t[t_eval], Surv.gen.gamma[t_eval]),
-                          integrate.xy(t[t_eval], Surv.rps[t_eval]),
-                          integrate.xy(t[t_eval], Surv.piecewise[t_eval]), 
+                          integrate.xy(t[t_eval], Surv.weibull[t_eval]), integrate.xy(t[t_eval], 
+                                                                                      Surv.gamma[t_eval]), integrate.xy(t[t_eval], 
+                                                                                                                        Surv.lnorm[t_eval]), integrate.xy(t[t_eval], 
+                                                                                                                                                          Surv.llogis[t_eval]), integrate.xy(t[t_eval], 
+                                                                                                                                                                                             Surv.gomp[t_eval]), integrate.xy(t[t_eval], 
+                                                                                                                                                                                                                              Surv.gen.gamma[t_eval]), integrate.xy(t[t_eval], 
+                                                                                                                                                                                                                                                                    Surv.rps[t_eval]), integrate.xy(t[t_eval], Surv.piecewise[t_eval]), 
                           NA) - AUC_true[b])
     Surv.piecewise
-    AUC_diff2[b, ] = c(integrate.xy(t[t_eval], abs(Surv.expo[t_eval] - surv_km_time[t_eval])),
-                       integrate.xy(t[t_eval], abs(Surv.weibull[t_eval] - surv_km_time[t_eval])), 
-                       integrate.xy(t[t_eval], abs(Surv.gamma[t_eval] - surv_km_time[t_eval])),
-                       integrate.xy(t[t_eval], abs(Surv.lnorm[t_eval] - surv_km_time[t_eval])), 
-                       integrate.xy(t[t_eval], abs(Surv.llogis[t_eval] - surv_km_time[t_eval])),
-                       integrate.xy(t[t_eval], abs(Surv.gomp[t_eval] - surv_km_time[t_eval])),
-                       integrate.xy(t[t_eval], abs(Surv.gen.gamma[t_eval] - surv_km_time[t_eval])),
-                       integrate.xy(t[t_eval], abs(Surv.rps[t_eval] - surv_km_time[t_eval])), 
-                       integrate.xy(t[t_eval], abs(Surv.piecewise[t_eval] - surv_km_time[t_eval])), NA)
+    AUC_diff2[b, ] = c(integrate.xy(t[t_eval], abs(Surv.expo[t_eval] - 
+                                                     surv_km_time[t_eval])), integrate.xy(t[t_eval], 
+                                                                                          abs(Surv.weibull[t_eval] - surv_km_time[t_eval])), 
+                       integrate.xy(t[t_eval], abs(Surv.gamma[t_eval] - 
+                                                     surv_km_time[t_eval])), integrate.xy(t[t_eval], 
+                                                                                          abs(Surv.lnorm[t_eval] - surv_km_time[t_eval])), 
+                       integrate.xy(t[t_eval], abs(Surv.llogis[t_eval] - 
+                                                     surv_km_time[t_eval])), integrate.xy(t[t_eval], 
+                                                                                          abs(Surv.gomp[t_eval] - surv_km_time[t_eval])), 
+                       integrate.xy(t[t_eval], abs(Surv.gen.gamma[t_eval] - 
+                                                     surv_km_time[t_eval])), integrate.xy(t[t_eval], 
+                                                                                          abs(Surv.rps[t_eval] - surv_km_time[t_eval])), 
+                       integrate.xy(t[t_eval], abs(Surv.piecewise[t_eval] - 
+                                                     surv_km_time[t_eval])), NA)
   }
   index_selc <- which(t <= max(follow_up_data$time))
   surv_KM <- survival:::survmean(surv_km, rmean = max(surv_km$time))
@@ -1531,12 +1531,14 @@ compare_boot_sims <- function (mod_parametric_orig, follow_up_data) {
                           mod_parametric_orig$mod.comp$Model)
   }
   mod_compfinal <- rbind(mod_parametric_orig$mod.comp[index_vals, 
-                                                      c("Model", "WAIC")], c(NA, NA, NA))
+                                                      c("Model", "WAIC")], c(NA, NA, NA, NA))
   mod_compfinal$Model[nrow(mod_compfinal)] <- "True Observations"
-  mod_compfinal <- cbind(mod_compfinal, AUC, AUC_diff = colMeans(AUC_diff))
-  mod_compfinal <- mod_compfinal[order(mod_compfinal$AUC_diff),] %>% mutate_if(is.numeric, round, digits = 2)
+  mod_compfinal <- cbind(mod_compfinal, AUC, AUC_diff = colMeans(AUC_diff), AUC_diff2 = colMeans(AUC_diff2))
+  mod_compfinal <- mod_compfinal[order(mod_compfinal$AUC_diff), 
+  ] %>% mutate_if(is.numeric, round, digits = 2)
   mod_compfinal
 }
+
 
 
 
@@ -1764,4 +1766,3 @@ digitise <- function(surv_inp,nrisk_inp,km_output="KMdata.txt",ipd_output="IPDda
     cat("\n")
   }
 }
-
