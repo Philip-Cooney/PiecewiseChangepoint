@@ -1152,9 +1152,9 @@ fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.ja
                                  pars = "gamma")[["gamma"]]
     LL_rps <- apply(temp_gamma, 1, function(x) {
       flexsurv::dsurvspline(x = df$time, gamma = x, knots = knots, 
-                  log = T) * df$status + flexsurv::psurvspline(q = df$time, 
-                                                     gamma = x, knots = knots, lower.tail = FALSE, 
-                                                     log.p = T) * (1 - df$status)
+                            log = T) * df$status + flexsurv::psurvspline(q = df$time, 
+                                                                         gamma = x, knots = knots, lower.tail = FALSE, 
+                                                                         log.p = T) * (1 - df$status)
     })
     LL_rps <- t(LL_rps)
     waic_vec[i] <- waic(LL_rps)[["estimates"]][3, 1]
@@ -1383,6 +1383,18 @@ compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.
                                        mapping = aes_string(y = "Surv", x = "t_pred", colour = paste0("'", 
                                                                                                       col_name[col_selc[i + 2]], "'")), inherit.aes = F)
   }
+  
+  #Hack to fix legend
+  df_km <- data.frame(Surv = c(0), t_pred = 0)
+  
+  plot_surv + geom_line(df_km , 
+                        mapping = aes_string(y = "Surv", x = "t_pred", colour = "'KM curve'"), inherit.aes = F)
+  
+  plot_surv <- plot_surv + geom_line(df_km , 
+                                     mapping = aes_string(y = "Surv", x = "t_pred", colour = "'Piecewise Expo'"), inherit.aes = F)
+  
+  
+  
   if (!is.null(km_risk)) {
     result.km <- survfit(Surv(time, status) ~ 1, data = df)
     max_time <- result.km$time[max(which(result.km$n.risk/result.km$n >= 
