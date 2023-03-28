@@ -105,10 +105,10 @@ compare_dco <-function (all_surv_mods, old_dco, new_dco, km_risk = 0.1){
                               result.km[[c("upper")]], result.km[[c("lower")]]))
   colnames(km.data) <- c("time", "survival", "upper", "lower")
   if (is.null(km_risk)) {
-    km.data <- km.data %>% filter(time >= max(old_dco$time))
+    km.data <- km.data %>% dplyr::filter(time >= max(old_dco$time))
   }
   else {
-    km.data <- km.data %>% filter(time >= max_time)
+    km.data <- km.data %>% dplyr::filter(time >= max_time)
   }
   all_surv_mods$plot_Surv_all + geom_step(data = km.data, aes(x = time, y = survival), 
                                           colour = "black", inherit.aes = F) + geom_step(data = km.data, 
@@ -642,7 +642,7 @@ piecewise_loglik.indiv <- function(df, changepoint, lambda = NULL) {
 #' }
 #'
 get.loglik <- function(df,lambda_df,changepoint_df ){
-  df_event <- df %>% filter(status == 1)
+  df_event <- df %>% dplyr::filter(status == 1)
   
   Surv_mat <- haz_mat <- matrix(nrow = nrow(lambda_df), ncol = nrow(df))
   
@@ -755,7 +755,7 @@ GetSurvPEH = function(x, s, lam) {
 }
 
 get.loglik_ind <- function(df,lambda_df,changepoint_df ){
-  df_event <- df %>% filter(status == 1)
+  df_event <- df %>% dplyr::filter(status == 1)
   
   Surv_mat <- haz_mat <- matrix(nrow = nrow(lambda_df), ncol = nrow(df))
   
@@ -784,7 +784,7 @@ add_km <- function (plt, df, colour = "black", km_risk = NULL){
   if (!is.null(km_risk)) {
     max_time <- result.km$time[max(which(result.km$n.risk/result.km$n >= 
                                            km_risk))]
-    km.data <- km.data %>% filter(time <= max_time)
+    km.data <- km.data %>% dplyr::filter(time <= max_time)
   }
   
   plt <- plt + geom_step(data = km.data, aes(x = time, y = survival), 
@@ -1127,7 +1127,7 @@ fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.ja
                                                mean = mle.ests_rps$res[, 1], sigma = mle.ests_rps$cov)))
     }
     k <- i
-    knots <- quantile(log((mf %>% filter(event == 1))$time), 
+    knots <- quantile(log((mf %>% dplyr::filter(event == 1))$time), 
                       seq(0, 1, length = k + 2))
     knots_list[[i]] <- knots
     B <- flexsurv::basis(knots, log(mf$time))
@@ -1280,7 +1280,7 @@ compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.
     if (max(gmp_haz_df$time) < max_predict) {
       stop("You are predicting survival beyond the time that you have provided general population mortaility")
     }
-    gmp_haz_df <- gmp_haz_df %>% arrange(time) %>% filter(time <= 
+    gmp_haz_df <- gmp_haz_df %>% arrange(time) %>% dplyr::filter(time <= 
                                                             max_predict)
     if (gpm_post_data) {
       gmp_haz_df[which(gmp_haz_df$time <= max(df$time)), 
@@ -1349,12 +1349,12 @@ compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.
     plot_surv[["layers"]][[1]]$data <- plot_surv[["layers"]][[1]]$data %>% 
       mutate(Cum_Haz_surv = -log(survival)) %>% left_join(gmp_haz_df, 
                                                           by = "time") %>% mutate(survival = exp(-(Cum_Haz_surv + 
-                                                                                                     Cum_Haz_gmp))) %>% select(survival, time)
+                                                                                                     Cum_Haz_gmp))) %>% dplyr::select(survival, time)
     for (q in 1:length(df_surv_vec)) {
       df_temp <- get(df_surv_vec[q])
       df_temp <- df_temp %>% left_join(gmp_haz_df, by = c(t_pred = "time")) %>% 
         mutate(Cum_Haz_surv = -log(Surv), Surv = exp(-(Cum_Haz_surv + 
-                                                         Cum_Haz_gmp))) %>% select(Surv, t_pred)
+                                                         Cum_Haz_gmp))) %>% dplyr::select(Surv, t_pred)
       assign(df_surv_vec[q], df_temp)
     }
   }
@@ -1428,7 +1428,7 @@ plot.pos_changepoint <- function(obj, breaks = NULL, probs = c(0.025, 0.975)){
                                   changepoint = rep(1:num.breaks,each = length(index_selc)))
   }
   
-  print(change.point_df %>% filter(changepoint ==num.breaks) %>% pull(changetime)%>% quantile(probs = probs) %>% round(digits = 2))
+  print(change.point_df %>% dplyr::filter(changepoint ==num.breaks) %>% pull(changetime)%>% quantile(probs = probs) %>% round(digits = 2))
   
   
   change.point_df$changepoint <- factor(change.point_df$changepoint)
@@ -1437,7 +1437,7 @@ plot.pos_changepoint <- function(obj, breaks = NULL, probs = c(0.025, 0.975)){
     dplyr::summarize(n = dplyr::n()) %>% mutate(perc = (n*100/length(index_selc)))
   
   if(is.null(breaks)){
-    ggplot(change.point_plot %>% filter(perc > .5), aes(x = changetime, y = perc, color=changepoint))+
+    ggplot(change.point_plot %>% dplyr::filter(perc > .5), aes(x = changetime, y = perc, color=changepoint))+
       geom_pointrange(aes(ymin=0, ymax=perc), size = 0.02)+
       scale_y_continuous(name="Probability of Change-point (%)")+
       ggtitle("Posterior Distribution of Change-points")+
@@ -1445,7 +1445,7 @@ plot.pos_changepoint <- function(obj, breaks = NULL, probs = c(0.025, 0.975)){
                                                          max(change.point_plot[which(change.point_plot$perc >0),
                                                                                "changetime"]), by = 0.5),1) )
   }else{
-    ggplot(change.point_plot %>% filter(perc > .5), aes(x = changetime, y = perc, color=changepoint))+
+    ggplot(change.point_plot %>% dplyr::filter(perc > .5), aes(x = changetime, y = perc, color=changepoint))+
       geom_pointrange(aes(ymin=0, ymax=perc), size = 0.02)+
       scale_y_continuous(name="Probability of Change-point (%)")+
       ggtitle("Posterior Distribution of Change-points")+
