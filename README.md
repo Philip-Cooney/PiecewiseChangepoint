@@ -186,7 +186,7 @@ extrapolated survival.
 
 In this example we consider GPM from a UK data source which provides
 mortality rates, defined as “the probability of that a person aged
-exactly $x$ will die before reaching $x+1$. Therefore, this data source
+exactly $x$ will die before reaching $x+1$". Therefore, this data source
 provides the conditional probability of death within a year at each age.
 
 Assuming our population is $50%$ male and female and the age at baseline
