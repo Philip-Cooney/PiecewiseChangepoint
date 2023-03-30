@@ -317,10 +317,7 @@ mod_comp$mod.comp[,c(1,3)] %>% arrange(WAIC)
 ``` r
 mod_comp$plot_Surv_all
 ```
-
-    ## `geom_line()`: Each group consists of only one observation.
-    ## ℹ Do you need to adjust the group aesthetic?
-
+  
 ![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 ``` r
