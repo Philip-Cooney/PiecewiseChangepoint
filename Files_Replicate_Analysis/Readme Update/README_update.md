@@ -334,70 +334,7 @@ mod_comp$plot_Surv_all
 
 ![](README_update_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
-# Replication of Results Presented in Manuscript
 
-## Details of Data Extraction from Technology Appraisals
-
-Information used for the identification of the relevant Technology
-Appraisals (TAs) from the review by ([Gorrod et al.
-2019](#ref-Gorrod.2019)) along with the relevant information extracted
-from them can be found in the Excel file located here.
-
-The first worksheet of this file lists the TAs investigated (Figure
-@ref(fig:Gorrod-1)).
-
-<div class="figure" style="text-align: center">
-
-<img src="Examples/Gorrod Overview.png" alt="Overview of all TAs investigated" width="80%" />
-<p class="caption">
-Overview of all TAs investigated
-</p>
-
-</div>
-
-For each of the TAs listed in the first worksheet a separate worksheet
-provides further information relating to whether or not it used the
-Bagust and Beale (B&B) approach along with the relevant location in the
-TA and an associated screengrab of the relevant information. In
-situations where B&B was confirmed to have been used, further
-information including the Kaplan-Meier survival curves and location of
-the assumed change-point are recorded along with the respective
-locations within the TA are recorded. Kaplan-Meier curves for any
-survival data made available after the original TA is along presented
-along with a link to the relevant data-source. For an example of some of
-the data extracted from TA268 ([TA268 2012](#ref-TA268)).
-
-<div class="figure" style="text-align: center">
-
-<img src="Examples/TA268 Data-source.png" alt="Overview of all TAs investigated" width="80%" />
-<p class="caption">
-Overview of all TAs investigated
-</p>
-
-</div>
-
-## Analysis of Extracted data using PiecewiseChangepoint package
-
-All results from the manuscript can be replicated using the folder
-located here.
-
-The folder contains a R script titled `Digitizing_R_code_Final_Share.R`
-which will produce relevant plots and tables in the folder named
-`pub-plots-tabs`, using the R functions described previously. A number
-of sub-folders are also contained within the main folder and provide
-pseudo-patient data created from the Kaplan-Meier curves presented in
-the TAs (and in publications providing later datacuts). These are named
-as follows `TA_Treatment_Outcome_Datacut` and are read in and
-`digitized` from the survival.txt and nrisk.txt files in these folders.
-
-<div class="figure" style="text-align: center">
-
-<img src="Examples/File Structure.png" alt="Overview of File Structure" width="80%" />
-<p class="caption">
-Overview of File Structure
-</p>
-
-</div>
 
 # References
 
