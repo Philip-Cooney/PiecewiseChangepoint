@@ -17,9 +17,8 @@ You can install the released version of PiecewiseChangepoint from
 ``` r
 devtools::install_github("Anon19820/PiecewiseChangepoint")
 ```
+or install the binary zip file ``https://github.com/Anon19820/PiecewiseChangepoint/blob/main/PiecewiseChangepoint_1.0.zip''.
 
-In order to run some of the functions JAGS and Stan are required along
-with RTools??
 
 ## Simulated Example
 
