@@ -90,7 +90,6 @@ expected value of 1/12 (and days 1/365).
 As we would expect the one change-point model has the highest posterior
 probability.
 
-    print(Collapsing_Model)
 
 ``` r
 print(Collapsing_Model)
