@@ -215,7 +215,7 @@ to a monthly rate which is done using the following formula (assuming a
 constant rate of mortality) ([Fleurence and Hollenbeak
 2007](#ref-Fleurence.2007)):
 
-$$r = \frac{1}{t}\ln(1-p).$$ Because there are 12 months in a year
+$$r = -\frac{1}{t}\ln(1-p).$$ Because there are 12 months in a year
 $t = 12$ and $p$ is the specific (in our case annual) probability of
 death. With the below R code we now have the monthly rate of death for
 ages 55 (our assumed starting age of the cohort) up to 100 years of age,
