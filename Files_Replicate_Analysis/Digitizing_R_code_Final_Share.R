@@ -1,40 +1,18 @@
 path<-"~/PhD/KM_Piecewise_Major_Review_final/"
 
-list.of.packages <- need<-c("PiecewiseChangepoint", "flexsurv","xlsx", "dplyr", "ggplot2", "sjstats") #needed libraries
-#sjstats for bootstrapping
-res <- lapply(list.of.packages, require, character.only = TRUE)
-
-not.loaded <-   list.of.packages[which(sapply(res, unlist) ==F)]
-not.loaded2 <- lapply(not.loaded, require,lib.loc = '/home/cooneph1/R-packages', character.only = TRUE)
-not.installed <-   not.loaded2[which(sapply(not.loaded2, unlist) ==F)]
-#load the packages
-if(length(not.installed)) install.packages(not.loaded,lib = '/home/cooneph1/R-packages')
-if(length(not.installed)) lapply(not.loaded, require,lib.loc = '/home/cooneph1/R-packages', character.only = TRUE)
-
-options(mc.cores = 4)
-
-
-# ToDo ----
-
-#Check if Rtools is required - Check using Gio's laptop.
-
-#Remove Crayon, Expertsurv requirement - Done
-#devtools::install_github("Anon19820/PiecewiseChangepoint", lib = "~/R-packages/")
-#remove.packages("PiecewiseChangepoint", lib = "~/R-packages/")
-#interval Allow a finer interval for plotting
-#Include a function to add general population mortality.
-#Include simulation study - Need to find it On TCD server.
-
-# Mortaility probabilities change from months to years
-# 1. Convert to rate then divide by (interval) months in the year briefly describe in appendix
-# 2. Add cumulative hazards together. 
-# https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/datasets/mortalityratesqxbysingleyearofage
-
-#print(xtable::xtable(read.xlsx(paste0(path,"Follow Up information.xlsx"), sheetIndex = 2)),include.rownames=FALSE)
+list.of.packages <- c("PiecewiseChangepoint", "flexsurv","xlsx", "dplyr", "ggplot2", "sjstats")
+install.packages(list.of.packages)
+library("PiecewiseChangepoint")
+library("flexsurv")
+library("xlsx")
+library("dplyr")
+library("ggplot2")
+library("sjstats")
 
 # 1 Read Data and generate pseudo-IPD  ----
 
-#Read in the Conditional Death for the General Population
+#Read in the Conditional Death Probability for the General Population
+#https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/datasets/mortalityratesqxbysingleyearofage
 Conditional_Death_df <- read.xlsx(paste0(path, "Conditional_Death_UK.xlsx"),1)
 time_horizon <- 100 # Max age at which survival probabilities is considered
 
@@ -121,15 +99,6 @@ n.chains <- 2
 n.iter.jags <- 5000
 n.burnin.jags <- n.iter.jags/10
 seed.val <- 123
-
-#set.seed(123)
-
-
-#Mortality
-
-#https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/datasets/mortalityratesqxbysingleyearofage
-
-
 
 # 2 TA268 ----
 
@@ -787,14 +756,7 @@ for(i in 1:2){
 }
 
 #Figure 2 in Publication
-
 ggarrange( cumhaz_plot1,plot1, ncol = 1, labels = c("A", "B"), common.legend = T, legend = "bottom",
            heights = c(4, 4), nrow = 2, align = "v")
 ggsave(paste0(path,"pub_plots_tabs/TA428_PEM_OS_Initial_hazards.png"), width = 15, height = 10)
-
-
-
-
-
-
 
