@@ -1,6 +1,16 @@
-path<-"~/PhD/KM_Piecewise_Major_Review_final/"
+#============================================================================
+# Preliminaries - load required packages
+# Notes: If the following packages aren't already installed, then 
+#        they can be  installed from CRAN by typing, for example: 
+#        install.packages("package-name"). Note that this requires an 
+#        internet connection. Installing rstan for the first time requires
+#        a few additional steps, see http://mc-stan.org/interfaces/rstan
+#        for details. Similarly installing rjags requires additional steps, 
+#        see https://onlinelibrary.wiley.com/doi/pdf/10.1002/9781119287995.app1   
+#============================================================================
 
-list.of.packages <- c("PiecewiseChangepoint", "flexsurv","xlsx", "dplyr", "ggplot2", "sjstats")
+
+list.of.packages <- c("PiecewiseChangepoint", "flexsurv","xlsx", "dplyr", "ggplot2", "sjstats", "rstan", "R2jags", "rjags")
 install.packages(list.of.packages)
 library("PiecewiseChangepoint")
 library("flexsurv")
@@ -8,6 +18,10 @@ library("xlsx")
 library("dplyr")
 library("ggplot2")
 library("sjstats")
+library("rstan")
+library("R2jags")
+# Create a pathway which will import files and export all the results
+path<-"~/PhD/KM_Piecewise_Major_Review_final/"
 
 # 1 Read Data and generate pseudo-IPD  ----
 
@@ -15,7 +29,7 @@ library("sjstats")
 #https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/datasets/mortalityratesqxbysingleyearofage
 Conditional_Death_df <- read.xlsx(paste0(path, "Conditional_Death_UK.xlsx"),1)
 time_horizon <- 100 # Max age at which survival probabilities is considered
-
+#All these files should exist in the "path" folder (which they will if downloaded from Github).
 folder_name <- excel_file <-c(
 "TA396_D+T_OS_Initial_V",
 "TA396_D+T_OS_Initial_D",
