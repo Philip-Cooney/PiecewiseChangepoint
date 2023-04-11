@@ -6,7 +6,11 @@
 #        internet connection. Installing rstan for the first time requires
 #        a few additional steps, see http://mc-stan.org/interfaces/rstan
 #        for details. Similarly installing rjags requires additional steps, 
-#        see https://onlinelibrary.wiley.com/doi/pdf/10.1002/9781119287995.app1   
+#        see https://onlinelibrary.wiley.com/doi/pdf/10.1002/9781119287995.app1  
+#
+# For PiecewiseChangepoint package, either the package binary should be 
+# installed, or run devtools::install_github("Anon19820/PiecewiseChangepoint")
+# (if devtools is installed)
 #============================================================================
 
 
