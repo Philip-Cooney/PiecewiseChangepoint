@@ -20,8 +20,10 @@ library("ggplot2")
 library("sjstats")
 library("rstan")
 library("R2jags")
+
 # Create a pathway which will import files and export all the results
-path<-"~/PhD/KM_Piecewise_Major_Review_final/"
+#All the required files exist in the "Files_Replicate_Analysis" folder (if downloaded from Github).
+path<-"~/Files_Replicate_Analysis/"
 
 # 1 Read Data and generate pseudo-IPD  ----
 
@@ -29,7 +31,7 @@ path<-"~/PhD/KM_Piecewise_Major_Review_final/"
 #https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/datasets/mortalityratesqxbysingleyearofage
 Conditional_Death_df <- read.xlsx(paste0(path, "Conditional_Death_UK.xlsx"),1)
 time_horizon <- 100 # Max age at which survival probabilities is considered
-#All these files should exist in the "path" folder (which they will if downloaded from Github).
+
 folder_name <- excel_file <-c(
 "TA396_D+T_OS_Initial_V",
 "TA396_D+T_OS_Initial_D",
@@ -618,26 +620,14 @@ write.xlsx(output, paste0(path, "pub_plots_tabs/Piecewise_TA_results.xlsx"))
 
 
 # 8 Plot Cum Hazard and Hazard Functions for TA428 ----
+list.of.packages <- c("Epi","bshazard","muhaz","ggpubr") 
 
-# library("Epi")
-# library("bshazard")
-# library("muhaz")
-# library("ggpubr")
+#install.packages(list.of.packages)
 
-
-list.of.packages <- need<-c("Epi","bshazard", "muhaz","ggpubr") #needed libraries
-#sjstats for bootstrapping
-res <- lapply(list.of.packages, require, character.only = TRUE)
-
-not.loaded <-   list.of.packages[which(sapply(res, unlist) ==F)]
-not.loaded2 <- lapply(not.loaded, require,lib.loc = '/home/cooneph1/R-packages', character.only = TRUE)
-not.installed <-   not.loaded2[which(sapply(not.loaded2, unlist) ==F)]
-#load the packages
-if(length(not.installed)) install.packages(not.loaded,lib = '/home/cooneph1/R-packages')
-if(length(not.installed)) lapply(not.loaded, require,lib.loc = '/home/cooneph1/R-packages', character.only = TRUE)
-
-
-
+library("Epi")
+library("bshazard")
+library("muhaz")
+library("ggpubr")
 
 
 TA428_PEM_OS_Update_model <- collapsing.model(TA428_PEM_OS_Update,n.iter =20750,
@@ -647,8 +637,8 @@ TA428_PEM_OS_Update_model <- collapsing.model(TA428_PEM_OS_Update,n.iter =20750,
 
 data_vec <- c("TA428_PEM_OS_Initial","TA428_PEM_OS_Update" )
 model_vec <- c("TA428_PEM_OS_Initial_model","TA428_PEM_OS_Update_model")
-ggtitle_vec <- c("Hazard Functions for KEYNOTE-024 data available at TA428", "Hazard Functions for 5 year update of KEYNOTE-024 data")
-cum_haz_vec <- c("Cum. Hazard Function for KEYNOTE-024 data available at TA428", "Cum. Hazard Functions for 5 year update of KEYNOTE-024 data")
+ggtitle_vec <- c("Hazard Functions for KEYNOTE-010 trial data available at TA428", "Hazard Functions for 5 year update of KEYNOTE-010 trial data")
+cum_haz_vec <- c("Cum. Hazard Function for KEYNOTE-010 trial data available at TA428", "Cum. Hazard Functions for 5 year update of KEYNOTE-010 trial data")
 
 for(i in 1:2){
   
@@ -773,4 +763,3 @@ for(i in 1:2){
 ggarrange( cumhaz_plot1,plot1, ncol = 1, labels = c("A", "B"), common.legend = T, legend = "bottom",
            heights = c(4, 4), nrow = 2, align = "v")
 ggsave(paste0(path,"pub_plots_tabs/TA428_PEM_OS_Initial_hazards.png"), width = 15, height = 10)
-
