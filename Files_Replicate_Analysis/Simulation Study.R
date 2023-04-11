@@ -1,12 +1,24 @@
 
+#============================================================================
+# Preliminaries - load required packages
+# Notes: If the following packages aren't already installed, then 
+#        they can be  installed from CRAN by typing, for example: 
+#        install.packages("package-name"). Note that this requires an 
+#        internet connection. 
+# For PiecewiseChangepoint package, either the package binary should be 
+# installed, or run devtools::install_github("Anon19820/PiecewiseChangepoint")
+# (if devtools is installed) 
+#============================================================================
 
 #Pathway to output the results
-pathway <- "~/PhD/KM_Piecewise_Major_Review_final/SimStudy-Res/"
+pathway <- "~/SimStudy-Res/"
 #All these Packages need to be installed for code to run
-list.of.packages <-c("PiecewiseChangepoint", "flexsurv","xlsx", "dplyr", "ggplot2", "sjstats") 
-res <- lapply(list.of.packages, require, character.only = TRUE)
-
-
+list.of.packages <-c("PiecewiseChangepoint", "flexsurv","xlsx", "dplyr") 
+#install.packages(list.of.packages)
+library("PiecewiseChangepoint")
+library("flexsurv")
+library("xlsx")
+library("dplyr")
 
 sim.study <- function(n_obs,n_events_req,rate,t_change, max_time =2,
                       n.sims, sims = 10750,burn_in = 750, timescale, lambda, time_seq, right_wrong = F){
@@ -43,7 +55,7 @@ sim.study <- function(n_obs,n_events_req,rate,t_change, max_time =2,
       surv.obj.df  <- survfit(Surv(time_event ,status2)~1, data = df)
       True_St <- summary(surv.obj.df, t = time_seq)[["surv"]]
       time_seq_km <- summary(surv.obj.df, t = time_seq)[["time"]]
-      True_RSt <- sfsmisc::integrate.xy(x = time_seq_km, True_St)
+      True_RSt <- integrate.xy(x = time_seq_km, True_St)
       
       n_events <-  df$status 
 
@@ -158,7 +170,7 @@ sim.study_right_wrong <- function(n_obs,n_events_req,rate,t_change, max_time =2,
     summary_km <- summary(surv.obj.df, t = time_seq)
     True_St <- summary_km[["surv"]]
     time_seq_km <- summary_km[["time"]]
-      True_RSt <- sfsmisc::integrate.xy(x = time_seq_km, True_St)
+      True_RSt <- integrate.xy(x = time_seq_km, True_St)
     
     n_events <-  df$status 
     
@@ -195,13 +207,13 @@ sim.study_right_wrong <- function(n_obs,n_events_req,rate,t_change, max_time =2,
     }
 
     
-    mod_correct_RSt <- sfsmisc::integrate.xy(x = time_seq_km, mod_correct_St)
-    mod_wrong1_RSt <- sfsmisc::integrate.xy(x = time_seq_km, mod_wrong1_St)
-    mod_wrong2_RSt <- sfsmisc::integrate.xy(x = time_seq_km, mod_wrong2_St)
+    mod_correct_RSt <- integrate.xy(x = time_seq_km, mod_correct_St)
+    mod_wrong1_RSt <- integrate.xy(x = time_seq_km, mod_wrong1_St)
+    mod_wrong2_RSt <- integrate.xy(x = time_seq_km, mod_wrong2_St)
     
-    ISSE_vec[i,1] <- sfsmisc::integrate.xy(x = time_seq_km, fx = (True_St-mod_correct_St)^2)
-    ISSE_vec[i,2] <- sfsmisc::integrate.xy(x = time_seq_km, fx = (True_St-mod_wrong1_St)^2)
-    ISSE_vec[i,3] <- sfsmisc::integrate.xy(x = time_seq_km, fx = (True_St-mod_wrong2_St)^2)
+    ISSE_vec[i,1] <- integrate.xy(x = time_seq_km, fx = (True_St-mod_correct_St)^2)
+    ISSE_vec[i,2] <- integrate.xy(x = time_seq_km, fx = (True_St-mod_wrong1_St)^2)
+    ISSE_vec[i,3] <- integrate.xy(x = time_seq_km, fx = (True_St-mod_wrong2_St)^2)
     
     RMSE_vec[i,1] <- (mod_correct_RSt-True_RSt)^2
     RMSE_vec[i,2] <- (mod_wrong1_RSt-True_RSt)^2
@@ -219,8 +231,8 @@ sim.study_right_wrong <- function(n_obs,n_events_req,rate,t_change, max_time =2,
     for(b in 1:length(mod_param)){
       fit.parm <- flexsurvreg(formula = Surv(time, status) ~ 1, data = df, dist=mod_param[b])
       mod_St <- summary(fit.parm, t = time_seq_km)[[1]]$est
-      mod_RSt <- sfsmisc::integrate.xy(x = time_seq_km, fx = mod_St)
-      ISSE_vec[i,3+b] <- sfsmisc::integrate.xy(x = time_seq_km, fx = (True_St-mod_St)^2)
+      mod_RSt <- integrate.xy(x = time_seq_km, fx = mod_St)
+      ISSE_vec[i,3+b] <- integrate.xy(x = time_seq_km, fx = (True_St-mod_St)^2)
       RMSE_vec[i,3+b] <- (mod_RSt-True_RSt)^2
       RSt_err[i,3+b]<- abs(mod_RSt-True_RSt)/True_RSt
     }
@@ -248,7 +260,7 @@ sim.study_right_wrong <- function(n_obs,n_events_req,rate,t_change, max_time =2,
 
 
 
-#No Changepoint
+#No Change-point
 
 rate1<- c(0.25)
 rate2<- c(0.5)
@@ -288,7 +300,7 @@ for(q in 1:length(censor_vec) ){
 }
 
 
-#Other Parameters
+#One and Two Change-point models
 
 
 rate1 <- c(0.5,0.75)
@@ -348,4 +360,3 @@ for(q in 1:length(censor_vec) ){
     }
   }
 }
-
