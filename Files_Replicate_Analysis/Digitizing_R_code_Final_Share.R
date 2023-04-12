@@ -472,7 +472,7 @@ age_baseline_TA447 <- round(65, digits = 0)
 prop_male_TA447 <- 0.646
 
 Conditional_Death_df_temp <- Conditional_Death_df
-Conditional_Death_df_temp[, "mix_prob"] <- Conditional_Death_df_temp[,2]*prop_male_TA428 + Conditional_Death_df_temp[,3]*(1-prop_male_TA447)
+Conditional_Death_df_temp[, "mix_prob"] <- Conditional_Death_df_temp[,2]*prop_male_TA447 + Conditional_Death_df_temp[,3]*(1-prop_male_TA447)
 Conditional_Death_df_temp <- Conditional_Death_df_temp %>% filter(age >= age_baseline_TA447 & age <= time_horizon)
 
 time_factor_TA447 <- 12
@@ -693,8 +693,8 @@ for(i in 1:2){
     
     #Plot the hazards
     max.time <- max(time.vec)
-    result.hazard.pe.lrg <- pehaz(time.vec, cens.vec, width= lrg.haz.int, max.time=round(max_time,0))
     
+    result.hazard.pe.lrg <- pehaz(time.vec, cens.vec, width= lrg.haz.int, max.time=round(max_time,0))
     result.smooth <- muhaz(time.vec, cens.vec, b.cor="left",
                            max.time=max.time, bw.method = bw.method)
     
