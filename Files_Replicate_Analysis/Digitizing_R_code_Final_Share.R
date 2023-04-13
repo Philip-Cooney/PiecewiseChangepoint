@@ -454,6 +454,7 @@ TA447_PEM_OS_Initial_model <- collapsing.model(TA447_PEM_OS_Initial,
                                             n.chains = n.chains,
                                             timescale = "months",
                                             seed.val = seed.val)
+max_prob_chng <-   as.numeric(names(which.max(TA447_PEM_OS_Initial_model$prob.changepoint)))
 
 #Does impact the survival probability give some timepoints
 
@@ -487,7 +488,7 @@ TA447_PEM_OS_Initial_all_mods <- compare.surv.mods(TA447_PEM_OS_Initial_model, m
                                                 n.iter.jags = n.iter.jags,
                                                 n.thin.jags = 1,
                                                 n.burnin.jags = n.burnin.jags,
-                                                chng.num = 1,
+                                                chng.num = max_prob_chng,
                                                 gmp_haz_df =gmp_haz_df_TA447,
                                                 col_km = "grey")
 
