@@ -94,30 +94,30 @@ rpwexp <- function(n, lam, s){
 }
 
 
-compare_dco <-function (all_surv_mods, old_dco, new_dco, km_risk = 0.1){
-  result.km_old <- survfit(Surv(time, status) ~ 1, data = old_dco)
-  if (!is.null(km_risk)) {
-    max_time <- result.km_old$time[max(which(result.km_old$n.risk/result.km_old$n >= km_risk))]
-  }
-  
-  result.km <- survfit(Surv(time, status) ~ 1, data = new_dco)
-  km.data <- data.frame(cbind(result.km[[c("time")]], result.km[[c("surv")]], 
-                              result.km[[c("upper")]], result.km[[c("lower")]]))
-  colnames(km.data) <- c("time", "survival", "upper", "lower")
-  if (is.null(km_risk)) {
-    km.data <- km.data %>% dplyr::filter(time >= max(old_dco$time))
-  }
-  else {
-    km.data <- km.data %>% dplyr::filter(time >= max_time)
-  }
-  all_surv_mods$plot_Surv_all + geom_step(data = km.data, aes(x = time, y = survival), 
-                                          colour = "black", inherit.aes = F) + geom_step(data = km.data, 
-                                                                                         aes(x = time, y = upper), colour = "black", linetype = "dashed", 
-                                                                                         inherit.aes = F) + geom_step(data = km.data, aes(x = time, 
-                                                                                                                                          y = lower), 
-                                                                                                                      colour = "black", linetype = "dashed", inherit.aes = F)
+compare_dco <- function (all_surv_mods, old_dco, new_dco, km_risk = 0.1, col_new_dco = "grey") {
+  result.km_old <- survfit(Surv(time, status) ~ 1, data = old_dco)
+  if (!is.null(km_risk)) {
+    max_time <- result.km_old$time[max(which(result.km_old$n.risk/result.km_old$n >= 
+                                               km_risk))]
+  }
+  result.km <- survfit(Surv(time, status) ~ 1, data = new_dco)
+  km.data <- data.frame(cbind(result.km[[c("time")]], result.km[[c("surv")]], 
+                              result.km[[c("upper")]], result.km[[c("lower")]]))
+  colnames(km.data) <- c("time", "survival", "upper", "lower")
+  if (is.null(km_risk)) {
+    km.data <- km.data %>% dplyr::filter(time >= max(old_dco$time))
+  }
+  else {
+    km.data <- km.data %>% dplyr::filter(time >= max_time)
+  }
+  all_surv_mods$plot_Surv_all + geom_step(data = km.data, aes(x = time, 
+                                                              y = survival),
+                                          colour = col_new_dco, inherit.aes = F) + 
+    geom_step(data = km.data,aes(x = time, y = upper), colour = col_new_dco, linetype = "dashed",inherit.aes = F) +
+    geom_step(data = km.data, aes(x = time,y = lower), colour = col_new_dco, linetype = "dashed", inherit.aes = F)
 }
 
+ 
 
 
 
@@ -975,10 +975,14 @@ fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.ja
   if ("rstan" %in% rownames(installed.packages()) == FALSE) {
     stop("Need rstan package to evaluate Royston-Parmar models")
   }
+  if ("flexsurv" %in% rownames(installed.packages()) == FALSE) {
+    stop("Need flexsurv package to evaluate Royston-Parmar models")
+  }
   require("rjags")
   require("R2jags")
   require("loo")
   require("rstan")
+  require("flexsurv")
   inits_list <- function(mod, n.chains = 2) {
     list_return <- list()
     for (i in 1:n.chains) {
