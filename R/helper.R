@@ -94,7 +94,7 @@ rpwexp <- function(n, lam, s){
 }
 
 
-compare_dco <- function (all_surv_mods, old_dco, new_dco, km_risk = 0.1, col_new_dco = "grey") {
+compare_dco <- function (all_surv_mods, old_dco, new_dco, km_risk = 0.1, col_new_dco = "grey"){
   result.km_old <- survfit(Surv(time, status) ~ 1, data = old_dco)
   if (!is.null(km_risk)) {
     max_time <- result.km_old$time[max(which(result.km_old$n.risk/result.km_old$n >= 
