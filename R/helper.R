@@ -8,7 +8,7 @@ integrate.xy <- function(x,fx, a,b, use.spline = TRUE, xtol = 2e-8){
   }
   if((n <- length(x)) != length(fx))
     stop("'fx' must have same length as 'x'")
-  
+
   if(is.unsorted(x)) { i <- sort.list(x); x <- x[i]; fx <- fx[i] }
   if(any(i <- duplicated(x))) {
     n <- length(x <- x[!i])
@@ -18,7 +18,7 @@ integrate.xy <- function(x,fx, a,b, use.spline = TRUE, xtol = 2e-8){
   }
   if(any(diff(x) == 0))
     stop("bug in 'duplicated()' killed me: have still multiple x[]!")
-  
+
   if(missing(a)) a <- x[1]
   else if(any(a < x[1])) stop("'a' must NOT be smaller than min(x)")
   if(missing(b)) b <- x[n]
@@ -29,7 +29,7 @@ integrate.xy <- function(x,fx, a,b, use.spline = TRUE, xtol = 2e-8){
     k <- max(length(a),length(b))
     if(any(b < a))    stop("'b' must be elementwise >= 'a'")
   }
-  
+
   if(use.spline) {
     xy <- spline(x,fx, n = max(1024, 3*n))
     ##-- Work around spline(.) BUG:  (ex.:  range(spline(1:20,1:20,n=95)))
@@ -42,7 +42,7 @@ integrate.xy <- function(x,fx, a,b, use.spline = TRUE, xtol = 2e-8){
     x <- xy$x; fx <- xy$y
     n <- length(x)
   }
-  
+
   ab <- unique(c(a,b))
   BB <- abs(outer(x,ab,"-")) < (xtol * max(b - a))
   if(any(j <- 0 == colSums(BB))) { # the j-th element(s) of ab are not in x[]
@@ -51,14 +51,14 @@ integrate.xy <- function(x,fx, a,b, use.spline = TRUE, xtol = 2e-8){
     i <- sort.list(x)
     x <- x[i];  fx <- c(y,fx)[i];  n <- length(x)
   }
-  
+
   ##--- now we could use 'Simpson's formula IFF the x[i] are equispaced... --
   ##--- Since this may well be wrong, just use 'trapezoid formula':
-  
+
   dig0 <- floor(-log10(xtol)) #
   f.match <- function(x,table,dig) match(signif(x,dig), signif(table,dig))
   ## was (S+) f.match <- function(x,table) match(as.single(x), as.single(table))
-  
+
   d <- dig0; while(anyNA(ai <- f.match(a,x, d))) d <- d - 1/8 ; ai <- rep_len(ai, k)
   d <- dig0; while(anyNA(bi <- f.match(b,x, d))) d <- d - 1/8 ; bi <- rep_len(bi, k)
   dfx <- fx[-c(1,n)] * diff(x,lag = 2)
@@ -73,7 +73,7 @@ integrate.xy <- function(x,fx, a,b, use.spline = TRUE, xtol = 2e-8){
 
 
 rpwexp <- function(n, lam, s){
-  
+
   U = runif(n, 0, 1)
   X = rep(NA,n)
   haz_seg <- diff(c(0,s))*lam[-length(lam)]
@@ -87,39 +87,11 @@ rpwexp <- function(n, lam, s){
     }else{
       X[i] = s[max(int)] + qexp(U[i]/St_thres[max(int)], rate = lam[max(int)+1], lower.tail = F)
     }
-    
+
   }
   return(X)
-  
+
 }
-
-
-#compare_dco <- function (all_surv_mods, old_dco, new_dco, km_risk = 0.1, col_new_dco = "grey"){
-#  result.km_old <- survfit(Surv(time, status) ~ 1, data = old_dco)
-#  if (!is.null(km_risk)) {
-#    max_time <- result.km_old$time[max(which(result.km_old$n.risk/result.km_old$n >= 
-#                                               km_risk))]
-#  }
-#  result.km <- survfit(Surv(time, status) ~ 1, data = new_dco)
-#  km.data <- data.frame(cbind(result.km[[c("time")]], result.km[[c("surv")]], 
-#                              result.km[[c("upper")]], result.km[[c("lower")]]))
-#  colnames(km.data) <- c("time", "survival", "upper", "lower")
-#  if (is.null(km_risk)) {
-#    km.data <- km.data %>% dplyr::filter(time >= max(old_dco$time))
-#  }
-#  else {
-#    km.data <- km.data %>% dplyr::filter(time >= max_time)
-#  }
-#  all_surv_mods$plot_Surv_all + geom_step(data = km.data, aes(x = time, 
-#                                                              y = survival),
-#                                          colour = col_new_dco, inherit.aes = F) + 
-#    geom_step(data = km.data,aes(x = time, y = upper), colour = col_new_dco, linetype = "dashed",inherit.aes = F) +
-#    geom_step(data = km.data, aes(x = time,y = lower), colour = col_new_dco, linetype = "dashed", inherit.aes = F)
-#}
-
- 
-
-
 
 SurvSplit <- function (Y, cuts){
   #Taken from eha
@@ -180,31 +152,31 @@ age.window <- function (dat, window, surv = c("enter", "exit", "event")){
 
 
 df_recast <- function(df) {
-  
+
   # Takes the data and reformats it into a time between each event format
-  
+
   df_event <- df[which(df$status == 1), c("status", "time")]
   df_event <- df_event_origin <- df_event[order(df_event$time), ]
   n_event <- nrow(df_event)
-  
+
   time_diff_event <- time_diff_orgin <- c(df_event$time[1] * n_event, diff(df_event$time) * ((n_event - 1):1))
-  
+
   if (any(time_diff_event == 0)) {
     time_diff_distinct_event <- time_diff_event[-which(time_diff_event == 0)]
-    
+
     time_diff_event <- time_diff_distinct_event
   }
-  
+
   n_distinct_events <- length(time_diff_event)
-  
+
   if (length(which(df$status == 0)) > 0) {
     df_event <- unique(df_event)
     ind_time_diff <- c(df_event$time[1], diff(df_event$time))
     df_cens <- df[which(df$status == 0), ]
     n_cens <- length(which(df$status == 0))
     time_diff_cens <- matrix(NA, nrow = n_cens, ncol = length(time_diff_event))
-    
-    
+
+
     for (i in 1:n_cens) {
       cens_obs <- df_cens$time[i]
       if (cens_obs <= df_event$time[1]) {
@@ -250,7 +222,7 @@ chain.mixing <- function(object) {
   } else {
     n.chains <- dim(k)[3]
   }
-  
+
   k.first <- k[, , 1]
   plot(jitter(apply(k.first, 1, function(x) {
     length(na.omit(x))
@@ -301,7 +273,7 @@ gen_piece_df <- function(n_obs, n_events_req, num.breaks, rate, t_change, max_ti
   #  nrow = n_obs,
   #  ncol = num.breaks + 1, byrow = TRUE
   #)
-  
+
   if (n_cens_req > 0) {
     if (num.breaks == 0) {
       samp_cens <- rexp(n_cens_req * 2, rate)
@@ -313,7 +285,7 @@ gen_piece_df <- function(n_obs, n_events_req, num.breaks, rate, t_change, max_ti
     samp_cens <- sapply(samp_cens, FUN = min, max_time)
     samp_cens <- sample(c(samp_cens, rep(max_time, n_obs - n_cens_req * 2))) # Randomized vector
     # http://www.cookbook-r.com/Manipulating_data/Randomizing_order/
-    
+
     df <- data.frame(time_event = samp, time_cens = samp_cens)
     df$time <- apply(cbind(samp, samp_cens), 1, min)
     df <- df %>% mutate(status = ifelse(samp <= samp_cens, 1, 0), enter = 0)
@@ -342,7 +314,7 @@ posterior.changepoint <- function(changepoint.res, num.breaks) {
     length(na.omit(x))
   }))
   changepoint.res2 <- changepoint.res[which(num.changepoints == num.breaks), 1:num.breaks]
-  
+
   ### Change plot function
   if (num.breaks == 1) {
     change.point_df <- data.frame(
@@ -355,14 +327,14 @@ posterior.changepoint <- function(changepoint.res, num.breaks) {
       changepoint = rep(1:num.breaks, each = nrow(changepoint.res2))
     )
   }
-  
+
   change.point_df$changepoint <- factor(change.point_df$changepoint)
-  
+
   change.point_plot <- change.point_df %>%
     group_by(changepoint, changetime) %>%
     dplyr::summarize(n = dplyr::n()) %>%
     mutate(perc = (n * 100 / nrow(changepoint.res2)))
-  
+
   plot_change <- ggplot(change.point_plot, aes(x = changetime, y = perc, color = changepoint)) +
     geom_pointrange(aes(ymin = 0, ymax = perc), size = 0.02) +
     scale_x_continuous(name = "Time", breaks = round(seq(round(min(change.point_plot$changetime), 1),
@@ -375,7 +347,7 @@ posterior.changepoint <- function(changepoint.res, num.breaks) {
     scale_y_continuous(name = "Probability of Changepoint (%)") +
     ggtitle("Posterior Distribution of changepoints") +
     theme_bw()
-  
+
   return(plot_change)
 }
 
@@ -411,14 +383,14 @@ index.loc <- function(index, k.slice) {
 #' @examples \dontrun{
 #' plot(Collapsing_Model, add.post = F)
 #' plot(Collapsing_Model, type = "hazard")}
-plot.changepoint <- function (object, type = "survival", chng.num = "all", add.km = T, 
+plot.changepoint <- function (object, type = "survival", chng.num = "all", add.km = T,
                               max_predict = 10, add.post = T, alpha.pos = NULL, t_pred = NULL,
                               final_chng_only =F,col_km = "black",km_risk = NULL,
                               ...){
   if (type == "survival") {
-    St <- get_Surv(object, chng.num = chng.num, max_predict = max_predict, 
+    St <- get_Surv(object, chng.num = chng.num, max_predict = max_predict,
                    time = t_pred)
-    return(plot.Survival(St, add.km = add.km, add.post = add.post, 
+    return(plot.Survival(St, add.km = add.km, add.post = add.post,
                          alpha.pos = alpha.pos))
   }
   if (type == "hazard") {
@@ -427,26 +399,26 @@ plot.changepoint <- function (object, type = "survival", chng.num = "all", add.k
 }
 
 
-plot.Survival<- function (St, max.num.post = 500, add.km, add.post, alpha.pos, 
+plot.Survival<- function (St, max.num.post = 500, add.km, add.post, alpha.pos,
                           env = parent.frame(), final_chng_only = F,col_km = "black", km_risk = NULL){
   nSims <- ncol(St)
   time <- as.numeric(rownames(St))
-  mean.Surv_df <- data.frame(survival = apply(St, 1, FUN = mean), 
+  mean.Surv_df <- data.frame(survival = apply(St, 1, FUN = mean),
                              time = time)
-  mod_quantile_df <- data.frame(cbind(time, t(apply(St, 1, 
+  mod_quantile_df <- data.frame(cbind(time, t(apply(St, 1,
                                                     FUN = quantile, c(0.025, 0.975)))))
   colnames(mod_quantile_df) <- c("time", "lower", "upper")
-  Surv.plot <- data.frame(Survival = c(unlist(St)), time = rep(time, 
+  Surv.plot <- data.frame(Survival = c(unlist(St)), time = rep(time,
                                                                nSims), id = rep(1:nSims, each = length(time)))
   if (max.num.post < nSims) {
     post_id <- sample(1:nSims, size = max.num.post)
     Surv.plot <- dplyr::filter(Surv.plot, id %in% post_id)
   }
-  plot_Surv <- ggplot(data = Surv.plot, mapping = aes(x = time, 
-                                                      y = Survival, group = id)) + geom_line(data = mean.Surv_df, 
-                                                                                             aes(x = time, y = survival), size = 1, inherit.aes = F, 
+  plot_Surv <- ggplot(data = Surv.plot, mapping = aes(x = time,
+                                                      y = Survival, group = id)) + geom_line(data = mean.Surv_df,
+                                                                                             aes(x = time, y = survival), size = 1, inherit.aes = F,
                                                                                              colour = "purple") + scale_y_continuous(breaks = seq(0,1, by = 0.1),
-                                                                                                                                     expand = c(0, 0)) + 
+                                                                                                                                     expand = c(0, 0)) +
     scale_x_continuous(expand = c(0,0)) + annotate(geom = "segment", x = seq(0, max(time),max(time)/50), xend = seq(0, max(time), max(time)/50),
                                                    y = 0, yend = 0.01) + theme_classic()
   if (add.post == T) {
@@ -456,10 +428,10 @@ plot.Survival<- function (St, max.num.post = 500, add.km, add.post, alpha.pos,
     else {
       alpha.pos <- alpha.pos
     }
-    plot_Surv <- plot_Surv + geom_line(data = mod_quantile_df, 
-                                       aes(x = time, y = lower), linetype = "dashed", size = 1, 
-                                       inherit.aes = F, colour = "grey") + 
-      geom_line(data = mod_quantile_df, aes(x = time, y = upper), linetype = "dashed", size = 1, 
+    plot_Surv <- plot_Surv + geom_line(data = mod_quantile_df,
+                                       aes(x = time, y = lower), linetype = "dashed", size = 1,
+                                       inherit.aes = F, colour = "grey") +
+      geom_line(data = mod_quantile_df, aes(x = time, y = upper), linetype = "dashed", size = 1,
                 inherit.aes = F, colour = "grey") + geom_line(size = 0.1,alpha = alpha.pos, colour = "red")
   }
   if (env$chng.num != "all" && env$chng.num != 0) {
@@ -467,24 +439,24 @@ plot.Survival<- function (St, max.num.post = 500, add.km, add.post, alpha.pos,
     num.changepoints <- unlist(apply(k, 1, function(x) {
       length(na.omit(x))
     }))
-    k_curr <- data.frame(k[which(num.changepoints == env$chng.num), 
+    k_curr <- data.frame(k[which(num.changepoints == env$chng.num),
                            1:env$chng.num])
     df <- env$object$df
-    df_event <- unique(df[which(df$status == 1), c("status", 
+    df_event <- unique(df[which(df$status == 1), c("status",
                                                    "time")])
-    time.break <- df_event[apply(k_curr, 2, FUN = mean), 
+    time.break <- df_event[apply(k_curr, 2, FUN = mean),
                            "time"]
     survival.close <- sapply(time.break, FUN = function(x) {
       which.min(abs(mean.Surv_df$time - x))
     })
     break.points.Surv <- data.frame(time = mean.Surv_df$time[survival.close], Survival = mean.Surv_df$survival[survival.close])
-    
+
     if(env$final_chng_only){
       break.points.Surv <- break.points.Surv[nrow(break.points.Surv),,drop = F]
     }
-    
-    plot_Surv <- plot_Surv + geom_point(data = break.points.Surv, 
-                                        aes(x = time, Survival), shape = 23, fill = "green", 
+
+    plot_Surv <- plot_Surv + geom_point(data = break.points.Surv,
+                                        aes(x = time, Survival), shape = 23, fill = "green",
                                         color = "darkred", size = 5, inherit.aes = F, stroke  = 2.5)
   }
   if (add.km) {
@@ -499,28 +471,28 @@ plot.hazard <- function(object, chng.num = "all", max.num.post = 500, alpha.pos 
   lambda <- object$lambda
   df <- object$df
   interval <- max(df$time) / 100
-  
+
   time.seq <- c(seq(from = 0, to = max(df$time), by = interval))
-  
+
   num.changepoints <- unlist(apply(k, 1, function(x) {
     length(na.omit(x))
   }))
-  
+
   if (chng.num != "all") {
     lambda <- as.matrix(lambda[which(num.changepoints == chng.num), 1:(chng.num + 1)])
     changepoint <- as.matrix(changepoint[which(num.changepoints == chng.num), 1:chng.num])
     num.changepoints <- num.changepoints[which(num.changepoints == chng.num)]
   }
-  
+
   lambda_res_final <- NULL
-  
+
   for (i in seq_along(unique(num.changepoints))) {
     index <- unique(num.changepoints)[order(unique(num.changepoints))][i]
-    
+
     # if(length(which(num.changepoints == index))<2){
     #   next
     # }
-    
+
     if (index == 0) {
       lambda_curr <- lambda[which(num.changepoints == index), 1:(index + 1)]
       lambda_res_final <- matrix(rep(lambda_curr, each = length(time.seq)),
@@ -528,7 +500,7 @@ plot.hazard <- function(object, chng.num = "all", max.num.post = 500, alpha.pos 
                                  ncol = length(time.seq),
                                  byrow = T
       )
-      
+
       df.changepoint <- data.frame(
         timepoints = rep(c(0, max(df$time)),
                          times = length(lambda_curr)
@@ -539,43 +511,43 @@ plot.hazard <- function(object, chng.num = "all", max.num.post = 500, alpha.pos 
     } else {
       changepoint_curr <- as.matrix(changepoint[which(num.changepoints == index), 1:index])
       lambda_curr <- lambda[which(num.changepoints == index), 1:(index + 1)]
-      
+
       lambda_res_curr <- matrix(nrow = nrow(changepoint_curr), ncol = length(time.seq))
       changepoint_curr_samp <- cbind(changepoint_curr, Inf)
-      
+
       for (j in 1:length(time.seq)) {
         index.lambda <- apply(changepoint_curr_samp, 1, function(x) {
           which.min(time.seq[j] > x)
         })
         lambda_res_curr[, j] <- lambda_curr[cbind(1:nrow(changepoint_curr_samp), index.lambda)]
       }
-      
-      
+
+
       # lambda.list[[i]] <- lambda_res_curr
       lambda_res_final <- rbind(lambda_res_final, lambda_res_curr)
     }
   }
-  
+
   df.hazard <- data.frame(
     timepoints = rep(time.seq, by = nrow(lambda_res_final)),
     hazards = c(t(lambda_res_final)),
     id = rep(1:nrow(lambda_res_final), each = length(time.seq))
   )
-  
-  
+
+
   lambda_res_final_df <- data.frame(t(apply(lambda_res_final, 2, FUN = quantile, probs = c(0.05, 0.5, 0.95))), time = time.seq)
-  
+
   if (max.num.post < nrow(changepoint)) {
     post_id <- sample(1:nrow(changepoint), size = max.num.post)
     df.plot.final <- dplyr::filter(df.hazard, id %in% post_id)
   }
-  
+
   if(is.null(alpha.pos)){
     alpha.pos <- 0.025
   }else{
     alpha.pos <- alpha.pos
   }
-  
+
   plot_haz <- ggplot(df.plot.final, aes(timepoints, hazards)) +
     geom_step(aes(group = id), linetype = "dashed", alpha = alpha.pos, colour = "red") +
     geom_line(data = lambda_res_final_df, aes(time, X50.), size = 1.5) +
@@ -584,7 +556,7 @@ plot.hazard <- function(object, chng.num = "all", max.num.post = 500, alpha.pos 
     scale_x_continuous(breaks = seq(0, max(df$time), length.out = 11), expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) +
     theme_classic()
-  
+
   return(plot_haz)
 }
 
@@ -601,26 +573,26 @@ piecewise_loglik.indiv <- function(df, changepoint, lambda = NULL) {
   surv.object <- with(df, Surv(enter, time, status))
   split <- SurvSplit(surv.object, changepoint)
   n.ivl <- length(changepoint) + 1
-  
+
   T <- split$Y$exit - split$Y$enter
   d <- split$Y$event
   ivl <- split$ivl
-  
-  
+
+
   n.obs <- length(unique(split$idx))
   log.lik.df <- array(NA, dim = c(n.obs, 1))
-  
+
   for (id in 1:n.obs) {
     death.loglik <- 0
     cum_haz.loglik <- 0
     for (i in seq_len(n.ivl)) {
       indx <- ivl == i
       id_index <- (split$idx == id) & indx
-      
+
       death.loglik <- sum(d[id_index]) * log(lambda[i]) + death.loglik
       cum_haz.loglik <- -sum(lambda[i] * T[id_index]) + cum_haz.loglik
     }
-    
+
     log.lik.df[id, 1] <- death.loglik + cum_haz.loglik
   }
   return(log.lik.df)
@@ -643,21 +615,21 @@ piecewise_loglik.indiv <- function(df, changepoint, lambda = NULL) {
 #'
 get.loglik <- function(df,lambda_df,changepoint_df ){
   df_event <- df %>% dplyr::filter(status == 1)
-  
+
   Surv_mat <- haz_mat <- matrix(nrow = nrow(lambda_df), ncol = nrow(df))
-  
+
   for(i in 1:nrow(lambda_df)){
     haz_mat[i,] <-   GetHazPEH(df$time,na.omit(changepoint_df[i,]),na.omit(lambda_df[i,]))
     Surv_mat[i,] <-    GetSurvPEH(df$time,na.omit(changepoint_df[i,]),na.omit(lambda_df[i,]))
-    
+
   }
-  
+
   log_haz_mat <- log(haz_mat)
   log_Surv_mat <- log(Surv_mat)
   log_haz_mat[,which(df$status == 0)] <- 0
-  
+
   return(log_haz_mat + log_Surv_mat)
-  
+
 }
 
 get.loglik_redundant <- function(object, chng.num = "all") { # Redundant because it is very slow
@@ -665,51 +637,51 @@ get.loglik_redundant <- function(object, chng.num = "all") { # Redundant because
   changepoint <- object$changepoint
   lambda <- object$lambda
   df <- object$df
-  
-  
+
+
   num.changepoints <- unlist(apply(k, 1, function(x) {
     length(na.omit(x))
   }))
-  
+
   if (chng.num != "all") {
     lambda <- as.matrix(lambda[which(num.changepoints == chng.num), 1:(chng.num + 1)])
     changepoint <- as.matrix(changepoint[which(num.changepoints == chng.num), 1:chng.num])
     num.changepoints <- num.changepoints[which(num.changepoints == chng.num)]
   }
-  
+
   lambda_res_final <- NULL
-  
+
   indiv.log.lik.final <- NULL
-  
+
   for (i in seq_along(unique(num.changepoints))) {
     index <- unique(num.changepoints)[order(unique(num.changepoints))][i]
-    
+
     # if(length(which(num.changepoints == index))<2){
     #   next
     # }
-    
+
     if (index == 0) {
       lambda_curr <- lambda[which(num.changepoints == index), 1:(index + 1)]
-      
+
       indiv.log.lik.final <- matrix(NA, nrow = length(lambda_curr), ncol = nrow(df))
-      
+
       for (q in 1:nrow(df)) {
         indiv.log.lik.final[, q] <- sapply(lambda_curr, FUN = ind.expo, time = df$time[q], status = df$status[q])
       }
     } else {
       lambda_curr <- lambda[which(num.changepoints == index), 1:(index + 1), drop = F]
       changepoint_curr <- changepoint[which(num.changepoints == index), 1:index, drop = F]
-      
+
       indiv.log.lik <- matrix(NA, nrow = nrow(lambda_curr), ncol = nrow(df))
-      
+
       for (x in 1:nrow(lambda_curr)) {
         indiv.log.lik[x, ] <- piecewise_loglik.indiv(df, as.numeric(data.frame(changepoint_curr)[x, ]), lambda_curr[x, ])
       }
-      
+
       indiv.log.lik.final <- rbind(indiv.log.lik.final, indiv.log.lik)
     }
   }
-  
+
   indiv.log.lik.final
 }
 
@@ -737,7 +709,7 @@ GetSurvPEH = function(x, s, lam) {
   y = x
   J = length(s)
   s <- c(0,s,Inf)
-  
+
   for (m in 1:length(x)) {
     for (k in 1:(J + 1)) {
       if ((x[m] > s[k]) && (x[m] <= s[k + 1])) {
@@ -756,21 +728,21 @@ GetSurvPEH = function(x, s, lam) {
 
 get.loglik_ind <- function(df,lambda_df,changepoint_df ){
   df_event <- df %>% dplyr::filter(status == 1)
-  
+
   Surv_mat <- haz_mat <- matrix(nrow = nrow(lambda_df), ncol = nrow(df))
-  
+
   for(i in 1:nrow(lambda_df)){
     haz_mat[i,] <-   GetHazPEH(df$time,na.omit(changepoint_df[i,]),na.omit(lambda_df[i,]))
     Surv_mat[i,] <-    GetSurvPEH(df$time,na.omit(changepoint_df[i,]),na.omit(lambda_df[i,]))
-    
+
   }
-  
+
   log_haz_mat <- log(haz_mat)
   log_Surv_mat <- log(Surv_mat)
   log_haz_mat[,which(df$status == 0)] <- 0
-  
+
   return(log_haz_mat + log_Surv_mat)
-  
+
 }
 
 
@@ -778,20 +750,20 @@ get.loglik_ind <- function(df,lambda_df,changepoint_df ){
 
 add_km <- function (plt, df, colour = "black", km_risk = NULL){
   result.km <- survfit(Surv(time, status) ~ 1, data = df)
-  km.data <- data.frame(cbind(result.km[[c("time")]], result.km[[c("surv")]], 
+  km.data <- data.frame(cbind(result.km[[c("time")]], result.km[[c("surv")]],
                               result.km[[c("upper")]], result.km[[c("lower")]]))
   colnames(km.data) <- c("time", "survival", "upper", "lower")
   if (!is.null(km_risk)) {
-    max_time <- result.km$time[max(which(result.km$n.risk/result.km$n >= 
+    max_time <- result.km$time[max(which(result.km$n.risk/result.km$n >=
                                            km_risk))]
     km.data <- km.data %>% dplyr::filter(time <= max_time)
   }
-  
-  plt <- plt + geom_step(data = km.data, aes(x = time, y = survival), 
-                         colour = colour, inherit.aes = F) + geom_step(data = km.data, 
-                                                                       aes(x = time, y = upper), colour = colour, linetype = "dashed", 
-                                                                       inherit.aes = F) + 
-    geom_step(data = km.data, aes(x = time,y = lower), colour = colour, linetype = "dashed", inherit.aes = F) 
+
+  plt <- plt + geom_step(data = km.data, aes(x = time, y = survival),
+                         colour = colour, inherit.aes = F) + geom_step(data = km.data,
+                                                                       aes(x = time, y = upper), colour = colour, linetype = "dashed",
+                                                                       inherit.aes = F) +
+    geom_step(data = km.data, aes(x = time,y = lower), colour = colour, linetype = "dashed", inherit.aes = F)
   if (!is.null(km_risk)) {
     plt+geom_vline(xintercept = max_time, linetype = "dotted")
   }else{
@@ -801,19 +773,19 @@ add_km <- function (plt, df, colour = "black", km_risk = NULL){
 
 
 get_Surv <- function(object, chng.num = "all", max_predict = NULL, time = NULL) {
-  
+
   if(is.null(time)){
     interval <- max_predict/100
     time <- c(seq(from = 0, to = max_predict, by = interval))
   }
-  
+
   #k <- object$k.stacked
   lambda <- object$lambda
   changepoint <- object$changepoint
   num.changepoints <- unlist(apply(changepoint, 1, function(x) {
     length(na.omit(x))
   }))
-  
+
   if (chng.num != "all") {
     if (length(which(num.changepoints == chng.num)) < 2) {
       stop("Too few simulations for this change-point model")
@@ -823,7 +795,7 @@ get_Surv <- function(object, chng.num = "all", max_predict = NULL, time = NULL) 
   } else {
     changepoints_eval <- unique(num.changepoints)[order(unique(num.changepoints))]
   }
-  
+
   St <- NULL
   for (i in 1:length(changepoints_eval)) {
     if (changepoints_eval[i] == 0) {
@@ -837,7 +809,7 @@ get_Surv <- function(object, chng.num = "all", max_predict = NULL, time = NULL) 
       lambda_curr <- lambda[which(num.changepoints == changepoints_eval[i]), 1:(changepoints_eval[i] + 1), drop=FALSE]
       changepoint_df <- cbind(0, changepoint_curr[, 1:changepoints_eval[i], drop=FALSE])
       time.interval_df <- t(apply(changepoint_df, 1, diff))
-      
+
       if (changepoints_eval[i] == 1) {
         cum_haz_df <- time.interval_df * lambda_curr[, 1]
         surv_df <- cbind(1, t(exp(-cum_haz_df)))
@@ -846,13 +818,13 @@ get_Surv <- function(object, chng.num = "all", max_predict = NULL, time = NULL) 
         cum_haz_df <- t(apply(time.interval_df * lambda_curr[, 1:changepoints_eval[i],drop=FALSE], 1, cumsum))
         surv_df <- cbind(1, exp(-cum_haz_df))
       }
-      
+
       St <- cbind(St, surv_change(time, nrow(changepoint_curr), lambda_curr, data.matrix(changepoint_df), surv_df))
-      
+
     }
   }
   rownames(St) <- time
-  
+
   St
 }
 
@@ -865,21 +837,21 @@ get_Surv <- function(object, chng.num = "all", max_predict = NULL, time = NULL) 
 #' @export
 print.changepoint <- function(object, chng.num = NULL, digits = min(3L, getOption("digits"))) {
   cat("Posterior Change-point Probabilities:\n")
-  
+
   names(attr(object$prob.changepoint, "dimnames")) <- NULL
-  
+
   print.default(format(object$prob.changepoint, digits = digits),
                 print.gap = 2L,
                 quote = FALSE
   )
-  
+
   if (is.null(chng.num)) {
     chng.prob <- as.numeric(names(which.max(object$prob.changepoint)))
   } else {
     chng.prob <- chng.num
   }
-  
-  
+
+
   k <- object$k.stacked
   lambda <- object$lambda
   changepoint <- object$changepoint
@@ -889,12 +861,12 @@ print.changepoint <- function(object, chng.num = NULL, digits = min(3L, getOptio
   if(chng.prob == 0){
     changepoint_curr <- NULL
   }else{
-    
+
     changepoint_curr <- data.frame(changepoint[which(num.changepoints == chng.prob), 1:chng.prob])
-    
+
   }
   lambda_curr <- data.frame(lambda[which(num.changepoints == chng.prob), 1:(chng.prob + 1)])
-  
+
   lambda_summary <- summary(lambda_curr)
   colnames(lambda_summary) <- paste0(rep("lambda_", chng.prob + 1), 1:(chng.prob + 1))
   if(chng.prob != 0){
@@ -904,13 +876,13 @@ print.changepoint <- function(object, chng.num = NULL, digits = min(3L, getOptio
   cat(paste0("\n"))
   cat(paste0("Summary of ", chng.prob, " change-point model:\n"))
   cat(paste0("\n"))
-  
+
   if(chng.prob != 0){
     print.output <- cbind(changepoint_summary, lambda_summary)
   }else{
     print.output <- lambda_summary
   }
-  
+
   print.default(format(print.output, digits = digits),
                 print.gap = 2L,
                 quote = FALSE)
@@ -934,9 +906,9 @@ print.changepoint <- function(object, chng.num = NULL, digits = min(3L, getOptio
 #'   \item \strong{Generalized Gamma}
 #'   \item \strong{Royston-Parmar Cubic Spline (1 or 2 know)}
 #' }
-#' 
+#'
 #' Number of knots for Royston-Parmar is made by assessing, and finding which model gives the lowest WAIC.
-#' 
+#'
 #' @param df standard dataframe for time-to-event data. Two columns required, time (to event or censoring) and status (indicating event or censoring).
 #' @param max_predict maximum survival time to be predicted from the survival models. Default is 10, however, depending on the timescale this should be changed.
 #' @return A list of with the following items:
@@ -946,7 +918,7 @@ print.changepoint <- function(object, chng.num = NULL, digits = min(3L, getOptio
 #'   \item \strong{jags.surv}: A list of the survival probabilities for the prespecified times from the 7 JAGS/Stan models.
 #' }
 #' @export
-fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.jags = NULL, 
+fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.jags = NULL,
                              n.burnin.jags = NULL, gof, inc_waic = T, t_pred =NULL){
   if (is.null(n.burnin.jags)) {
     n.burnin.jags = floor(n.iter.jags/2)
@@ -954,14 +926,14 @@ fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.ja
   if (is.null(n.thin.jags)) {
     n.thin.jags <- max(1, floor((n.iter.jags - n.burnin.jags)/1000))
   }
-  
+
   if (is.null(t_pred)) {
     t_pred <- seq(0, to = max_predict, length.out =100 )
   }
-  
-  
-  
-  
+
+
+
+
   cat(" \n")
   if ("rjags" %in% rownames(installed.packages()) == FALSE) {
     stop("Need JAGS to run this function")
@@ -1003,7 +975,7 @@ fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.ja
       if (mod == "gompertz") {
         list_inits$a = 0.001
         list_inits$b = 1/mean(df$time)
-        list_inits <- list_inits[names(list_inits) %!in% 
+        list_inits <- list_inits[names(list_inits) %!in%
                                    c("t")]
       }
       if (mod == "lnorm") {
@@ -1016,7 +988,7 @@ fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.ja
         list_inits$mu <- mean(lt)
         list_inits$scale <- 3 * var(lt)/(pi^2)
         list_inits$t.log <- log(tinits1 + runif(1))
-        list_inits <- list_inits[names(list_inits) %!in% 
+        list_inits <- list_inits[names(list_inits) %!in%
                                    c("t")]
       }
       if (mod == "gengamma") {
@@ -1051,14 +1023,14 @@ fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.ja
   is.na(df_jags$t) <- df_jags$status == 0
   df_jags$is.censored <- 1 - df_jags$status
   df_jags$t.cen <- df_jags$time + df_jags$status
-  data_jags <- list(N = nrow(df_jags), t.cen = df_jags$t.cen, 
+  data_jags <- list(N = nrow(df_jags), t.cen = df_jags$t.cen,
                     is.censored = df_jags$is.censored, t = df_jags$t)
   data_jags$t_pred <- t_pred
   data_jags_llogis <- data_jags
   data_jags_llogis$t.log <- log(data_jags$t)
   data_jags_llogis$t.cen.log <- log(data_jags$t.cen)
   `%!in%` <- Negate(`%in%`)
-  data_jags_llogis <- data_jags_llogis[names(data_jags_llogis) %!in% 
+  data_jags_llogis <- data_jags_llogis[names(data_jags_llogis) %!in%
                                          c("t", "t.cen")]
   data_gomp <- list()
   data_gomp$time <- df$time
@@ -1067,97 +1039,97 @@ fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.ja
   data_gomp$t_pred <- data_jags$t_pred
   n.chains = 2
   cat("Exponential Model \n")
-  expo.mod <- R2jags::jags(model.file = textConnection(expo), 
-                           data = data_jags, inits = inits_list("exp", n.chains), 
-                           n.chains = n.chains, parameters.to.save = c("Like", 
-                                                                       "lambda", "St_pred", "total_LLik"), n.iter = n.iter.jags, 
+  expo.mod <- R2jags::jags(model.file = textConnection(expo),
+                           data = data_jags, inits = inits_list("exp", n.chains),
+                           n.chains = n.chains, parameters.to.save = c("Like",
+                                                                       "lambda", "St_pred", "total_LLik"), n.iter = n.iter.jags,
                            n.thin = n.thin.jags, n.burnin = n.burnin.jags)
   cat("Weibull Model \n")
-  weib.mod <- R2jags::jags(model.file = textConnection(weibull), 
-                           data = data_jags, inits = inits_list("weibull", n.chains), 
-                           n.chains = n.chains, parameters.to.save = c("lambda", 
-                                                                       "v", "Like", "St_pred", "total_LLik"), n.iter = n.iter.jags, 
+  weib.mod <- R2jags::jags(model.file = textConnection(weibull),
+                           data = data_jags, inits = inits_list("weibull", n.chains),
+                           n.chains = n.chains, parameters.to.save = c("lambda",
+                                                                       "v", "Like", "St_pred", "total_LLik"), n.iter = n.iter.jags,
                            n.thin = n.thin.jags, n.burnin = n.burnin.jags)
   cat("Gamma Model \n")
-  gamma.mod <- R2jags::jags(model.file = textConnection(gamma.jags), 
-                            data = data_jags, inits = inits_list("gamma", n.chains), 
-                            n.chains = n.chains, parameters.to.save = c("lambda", 
-                                                                        "shape", "Like", "St_pred", "total_LLik"), n.iter = n.iter.jags, 
+  gamma.mod <- R2jags::jags(model.file = textConnection(gamma.jags),
+                            data = data_jags, inits = inits_list("gamma", n.chains),
+                            n.chains = n.chains, parameters.to.save = c("lambda",
+                                                                        "shape", "Like", "St_pred", "total_LLik"), n.iter = n.iter.jags,
                             n.thin = n.thin.jags, n.burnin = n.burnin.jags)
   cat("LogNormal Model \n")
-  lnorm.mod <- R2jags::jags(model.file = textConnection(lnorm.jags), 
-                            data = data_jags, inits = inits_list("lnorm", n.chains), 
-                            n.chains = n.chains, parameters.to.save = c("mu", "sd", 
-                                                                        "Like", "St_pred", "total_LLik"), n.iter = n.iter.jags, 
+  lnorm.mod <- R2jags::jags(model.file = textConnection(lnorm.jags),
+                            data = data_jags, inits = inits_list("lnorm", n.chains),
+                            n.chains = n.chains, parameters.to.save = c("mu", "sd",
+                                                                        "Like", "St_pred", "total_LLik"), n.iter = n.iter.jags,
                             n.thin = n.thin.jags, n.burnin = n.burnin.jags)
   cat("LogLogistic Model \n")
-  llogis.mod <- R2jags::jags(model.file = textConnection(llogis.jags), 
-                             data = data_jags_llogis, inits = inits_list("llogis", 
-                                                                         n.chains), n.chains = n.chains, parameters.to.save = c("alpha", 
-                                                                                                                                "beta", "Like", "St_pred", "total_LLik"), n.iter = n.iter.jags, 
+  llogis.mod <- R2jags::jags(model.file = textConnection(llogis.jags),
+                             data = data_jags_llogis, inits = inits_list("llogis",
+                                                                         n.chains), n.chains = n.chains, parameters.to.save = c("alpha",
+                                                                                                                                "beta", "Like", "St_pred", "total_LLik"), n.iter = n.iter.jags,
                              n.thin = n.thin.jags, n.burnin = n.burnin.jags)
   cat("Gompertz Model \n")
-  gomp.mod <- R2jags::jags(model.file = textConnection(gompertz.jags), 
-                           data = data_gomp, inits = inits_list("gompertz", n.chains), 
-                           n.chains = n.chains, parameters.to.save = c("a", "b", 
-                                                                       "Like", "St_pred", "total_LLik"), n.iter = n.iter.jags, 
+  gomp.mod <- R2jags::jags(model.file = textConnection(gompertz.jags),
+                           data = data_gomp, inits = inits_list("gompertz", n.chains),
+                           n.chains = n.chains, parameters.to.save = c("a", "b",
+                                                                       "Like", "St_pred", "total_LLik"), n.iter = n.iter.jags,
                            n.thin = n.thin.jags, n.burnin = n.burnin.jags)
   cat("Generalized Gamma Model \n")
-  gen.gamma.mod <- R2jags::jags(model.file = textConnection(gen.gamma.jags), 
-                                data = data_jags, inits = inits_list("gengamma", n.chains), 
-                                n.chains = n.chains, parameters.to.save = c("r", "lambda", 
-                                                                            "b", "Like", "St_pred", "total_LLik"), n.iter = n.iter.jags, 
+  gen.gamma.mod <- R2jags::jags(model.file = textConnection(gen.gamma.jags),
+                                data = data_jags, inits = inits_list("gengamma", n.chains),
+                                n.chains = n.chains, parameters.to.save = c("r", "lambda",
+                                                                            "b", "Like", "St_pred", "total_LLik"), n.iter = n.iter.jags,
                                 n.thin = n.thin.jags, n.burnin = n.burnin.jags)
   data <- df[, c("time", "status")]
   formula <- Surv(time, status) ~ 1
-  formula_temp <- stats::update(formula, paste(all.vars(formula, 
+  formula_temp <- stats::update(formula, paste(all.vars(formula,
                                                         data)[1], "~", all.vars(formula, data)[2], "+."))
-  mf <- tibble::as_tibble(stats::model.frame(formula_temp, 
-                                             data)) %>% dplyr::rename(time = 1, event = 2) %>% dplyr::rename_if(is.factor, 
-                                                                                                                .funs = ~gsub("as.factor[( )]", "", .x)) %>% dplyr::rename_if(is.factor, 
-                                                                                                                                                                              .funs = ~gsub("[( )]", "", .x)) %>% dplyr::bind_cols(tibble::as_tibble(stats::model.matrix(formula_temp, 
-                                                                                                                                                                                                                                                                         data)) %>% dplyr::select(contains("Intercept"))) %>% 
-    dplyr::select(time, event, contains("Intercept"), everything()) %>% 
+  mf <- tibble::as_tibble(stats::model.frame(formula_temp,
+                                             data)) %>% dplyr::rename(time = 1, event = 2) %>% dplyr::rename_if(is.factor,
+                                                                                                                .funs = ~gsub("as.factor[( )]", "", .x)) %>% dplyr::rename_if(is.factor,
+                                                                                                                                                                              .funs = ~gsub("[( )]", "", .x)) %>% dplyr::bind_cols(tibble::as_tibble(stats::model.matrix(formula_temp,
+                                                                                                                                                                                                                                                                         data)) %>% dplyr::select(contains("Intercept"))) %>%
+    dplyr::select(time, event, contains("Intercept"), everything()) %>%
     tibble::rownames_to_column("ID")
-  AIC_rps_vec <- BIC_rps_vec <- pml_vec <- waic_vec <- rep(NA, 
+  AIC_rps_vec <- BIC_rps_vec <- pml_vec <- waic_vec <- rep(NA,
                                                            2)
   knots_list <- list()
   cat("Royston-Parmar Spline Model \n")
   for (i in 1:2) {
-    mle.ests_rps <- flexsurv::flexsurvspline(Surv(time, 
+    mle.ests_rps <- flexsurv::flexsurvspline(Surv(time,
                                                   status) ~ 1, data = df, k = i)
     init_fun_rps <- function(...) {
-      list(gamma = as.numeric(mvtnorm::rmvnorm(n = 1, 
+      list(gamma = as.numeric(mvtnorm::rmvnorm(n = 1,
                                                mean = mle.ests_rps$res[, 1], sigma = mle.ests_rps$cov)))
     }
     k <- i
-    knots <- quantile(log((mf %>% dplyr::filter(event == 1))$time), 
+    knots <- quantile(log((mf %>% dplyr::filter(event == 1))$time),
                       seq(0, 1, length = k + 2))
     knots_list[[i]] <- knots
     B <- flexsurv::basis(knots, log(mf$time))
     DB <- flexsurv::dbasis(knots, log(mf$time))
     mm <- stats::model.matrix(formula, data)[, -1]
     if (length(mm) < 1) {
-      mm <- matrix(rep(0, nrow(mf)), nrow = nrow(mf), 
+      mm <- matrix(rep(0, nrow(mf)), nrow = nrow(mf),
                    ncol = 2)
     }
     if (is.null(dim(mm))) {
       mm <- cbind(mm, rep(0, length(mm)))
     }
-    data.stan <- list(t = mf$time, d = mf$event, n = nrow(mf), 
-                      M = k, X = mm, H = ncol(mm), B = B, DB = DB, mu_gamma = rep(0, 
+    data.stan <- list(t = mf$time, d = mf$event, n = nrow(mf),
+                      M = k, X = mm, H = ncol(mm), B = B, DB = DB, mu_gamma = rep(0,
                                                                                   k + 2), sigma_gamma = rep(5, k + 2), knots = knots)
     data.stan$mu_beta = rep(0, data.stan$H)
     data.stan$sigma_beta = rep(20, data.stan$H)
-    assign(paste0("rps.", i), rstan::sampling(rps.stan_mod, 
-                                              data.stan, chains = n.chains, iter = n.iter.jags, 
+    assign(paste0("rps.", i), rstan::sampling(rps.stan_mod,
+                                              data.stan, chains = n.chains, iter = n.iter.jags,
                                               warmup = n.burnin.jags, thin = 1, init = init_fun_rps))
-    temp_gamma <- rstan::extract(get(paste0("rps.", i)), 
+    temp_gamma <- rstan::extract(get(paste0("rps.", i)),
                                  pars = "gamma")[["gamma"]]
     LL_rps <- apply(temp_gamma, 1, function(x) {
-      flexsurv::dsurvspline(x = df$time, gamma = x, knots = knots, 
-                            log = T) * df$status + flexsurv::psurvspline(q = df$time, 
-                                                                         gamma = x, knots = knots, lower.tail = FALSE, 
+      flexsurv::dsurvspline(x = df$time, gamma = x, knots = knots,
+                            log = T) * df$status + flexsurv::psurvspline(q = df$time,
+                                                                         gamma = x, knots = knots, lower.tail = FALSE,
                                                                          log.p = T) * (1 - df$status)
     })
     LL_rps <- t(LL_rps)
@@ -1194,62 +1166,62 @@ fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.ja
   }
   gamma_rps <- rstan::extract(rps.mod, pars = "gamma")[["gamma"]]
   psa_rps <- apply(gamma_rps, 1, function(x) {
-    psurvspline(q = t_pred, gamma = x, knots = knot_used, 
+    psurvspline(q = t_pred, gamma = x, knots = knot_used,
                 lower.tail = FALSE)
   })
   Surv.rps <- data.frame(time = t_pred, St_rps = rowMeans(psa_rps))
-  jags.models = list(expo.mod, weib.mod, gamma.mod, lnorm.mod, 
+  jags.models = list(expo.mod, weib.mod, gamma.mod, lnorm.mod,
                      llogis.mod, gomp.mod, gen.gamma.mod, rps.mod)
   AIC_vec <- BIC_vec <- rep(NA, 8)
   AIC_vec[8] <- AIC_rps
   BIC_vec[8] <- BIC_rps
-  mod.names <- c("expo", "weib", "gamma", "lnorm", "llogis", 
+  mod.names <- c("expo", "weib", "gamma", "lnorm", "llogis",
                  "gomp", "gen.gamma")
   num.param <- c(1, 2, 2, 2, 2, 2, 3)
   PML_calc <- function(jags.mod) {
-    Like_vec <- jags.mod$BUGSoutput$sims.matrix[, grep("Like", 
+    Like_vec <- jags.mod$BUGSoutput$sims.matrix[, grep("Like",
                                                        colnames(jags.mod$BUGSoutput$sims.matrix))]
     return(as.numeric(nrow(1/Like_vec)/colSums(1/Like_vec)))
   }
   for (i in 1:length(num.param)) {
     index <- grep("total_LLik", rownames(jags.models[[i]][["BUGSoutput"]][["summary"]]))
-    LL_max <- jags.models[[i]][["BUGSoutput"]][["summary"]][index, 
-                                                            1] + (jags.models[[i]][["BUGSoutput"]][["summary"]][index, 
+    LL_max <- jags.models[[i]][["BUGSoutput"]][["summary"]][index,
+                                                            1] + (jags.models[[i]][["BUGSoutput"]][["summary"]][index,
                                                                                                                 2])^2
     AIC_vec[i] <- -2 * LL_max + 2 * num.param[i]
     BIC_vec[i] <- -2 * LL_max + num.param[i] * log(sum(df$status))
     mod.temp <- get(paste0(mod.names[i], ".mod"))
     PML.temp <- assign(paste0("PML.", mod.names[i]), PML_calc(mod.temp))
-    assign(paste0("PML.", mod.names[i], ".trans"), sum(log(PML.temp)) * 
+    assign(paste0("PML.", mod.names[i], ".trans"), sum(log(PML.temp)) *
              (-2))
-    assign(paste0("Like.sims.", mod.names[i]), mod.temp$BUGSoutput[["sims.matrix"]][, 
+    assign(paste0("Like.sims.", mod.names[i]), mod.temp$BUGSoutput[["sims.matrix"]][,
                                                                                     grep("Like", colnames(mod.temp$BUGSoutput[["sims.matrix"]]))])
     if (inc_waic == F) {
-      assign(paste0("WAIC.", mod.names[i], ".trans"), 
+      assign(paste0("WAIC.", mod.names[i], ".trans"),
              sum(log(PML.temp)) * (-2))
     }
     else {
-      assign(paste0("WAIC.", mod.names[i]), waic(log(get(paste0("Like.sims.", 
+      assign(paste0("WAIC.", mod.names[i]), waic(log(get(paste0("Like.sims.",
                                                                 mod.names[i])))))
     }
-    assign(paste0("Surv.", mod.names[i]), mod.temp$BUGSoutput[["summary"]][grep("St_pred", 
+    assign(paste0("Surv.", mod.names[i]), mod.temp$BUGSoutput[["summary"]][grep("St_pred",
                                                                                 rownames(mod.temp$BUGSoutput[["summary"]])), 1])
   }
-  model.fit <- data.frame(Model = c("Exponential", "Weibull", 
-                                    "Gamma", "Log-Normal", "Log-Logistic", "Gompertz", "Generalized Gamma", 
-                                    paste0("Royston-Parmar ", knot_num, " knot")), minustwo_logPML = c(PML.expo.trans, 
-                                                                                                       PML.weib.trans, PML.gamma.trans, PML.lnorm.trans, PML.llogis.trans, 
-                                                                                                       PML.gomp.trans, PML.gen.gamma.trans, pml_rps), WAIC = c(WAIC.expo$estimates[3, 
-                                                                                                                                                                                   1], WAIC.weib$estimates[3, 1], WAIC.gamma$estimates[3, 
-                                                                                                                                                                                                                                       1], WAIC.lnorm$estimates[3, 1], WAIC.llogis$estimates[3, 
-                                                                                                                                                                                                                                                                                             1], WAIC.gomp$estimates[3, 1], WAIC.gen.gamma$estimates[3, 
+  model.fit <- data.frame(Model = c("Exponential", "Weibull",
+                                    "Gamma", "Log-Normal", "Log-Logistic", "Gompertz", "Generalized Gamma",
+                                    paste0("Royston-Parmar ", knot_num, " knot")), minustwo_logPML = c(PML.expo.trans,
+                                                                                                       PML.weib.trans, PML.gamma.trans, PML.lnorm.trans, PML.llogis.trans,
+                                                                                                       PML.gomp.trans, PML.gen.gamma.trans, pml_rps), WAIC = c(WAIC.expo$estimates[3,
+                                                                                                                                                                                   1], WAIC.weib$estimates[3, 1], WAIC.gamma$estimates[3,
+                                                                                                                                                                                                                                       1], WAIC.lnorm$estimates[3, 1], WAIC.llogis$estimates[3,
+                                                                                                                                                                                                                                                                                             1], WAIC.gomp$estimates[3, 1], WAIC.gen.gamma$estimates[3,
                                                                                                                                                                                                                                                                                                                                                      1], waic_rps), AIC = AIC_vec, BIC = BIC_vec)
-  jags_output <- list(model.fit = model.fit, jags.models = list(expo.mod, 
-                                                                weib.mod, gamma.mod, lnorm.mod, llogis.mod, gomp.mod, 
-                                                                gen.gamma.mod, rps.mod), jags.surv = list(Surv.expo = Surv.expo, 
-                                                                                                          Surv.weib = Surv.weib, Surv.gamma = Surv.gamma, Surv.lnorm = Surv.lnorm, 
-                                                                                                          Surv.llogis = Surv.llogis, Surv.lnorm = Surv.lnorm, 
-                                                                                                          Surv.gomp = Surv.gomp, Surv.gen.gamma = Surv.gen.gamma, 
+  jags_output <- list(model.fit = model.fit, jags.models = list(expo.mod,
+                                                                weib.mod, gamma.mod, lnorm.mod, llogis.mod, gomp.mod,
+                                                                gen.gamma.mod, rps.mod), jags.surv = list(Surv.expo = Surv.expo,
+                                                                                                          Surv.weib = Surv.weib, Surv.gamma = Surv.gamma, Surv.lnorm = Surv.lnorm,
+                                                                                                          Surv.llogis = Surv.llogis, Surv.lnorm = Surv.lnorm,
+                                                                                                          Surv.gomp = Surv.gomp, Surv.gen.gamma = Surv.gen.gamma,
                                                                                                           Surv.rps = Surv.rps))
   return(jags_output)
 }
@@ -1274,20 +1246,20 @@ fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.ja
 #' @md
 
 
-compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.best = 3, 
-                               n.iter.jags = 2000, n.thin.jags = NULL, n.burnin.jags = NULL, 
-                               gof = "WAIC", inc_waic = TRUE, km_risk = 0.1, gmp_haz_df = NULL, 
-                               gpm_post_data = TRUE,  col_km = "black", final_chng_only  = FALSE){ 
+compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.best = 3,
+                               n.iter.jags = 2000, n.thin.jags = NULL, n.burnin.jags = NULL,
+                               gof = "WAIC", inc_waic = TRUE, km_risk = 0.1, gmp_haz_df = NULL,
+                               gpm_post_data = TRUE,  col_km = "black", final_chng_only  = FALSE){
   df <- object$df
   if (!is.null(gmp_haz_df)) {
     gmp_haz_df[nrow(gmp_haz_df) + 1, ] <- 0
     if (max(gmp_haz_df$time) < max_predict) {
       stop("You are predicting survival beyond the time that you have provided general population mortaility")
     }
-    gmp_haz_df <- gmp_haz_df %>% arrange(time) %>% dplyr::filter(time <= 
-                                                            max_predict)
+    gmp_haz_df <- gmp_haz_df %>% arrange(time) %>% dplyr::filter(time <=
+                                                                   max_predict)
     if (gpm_post_data) {
-      gmp_haz_df[which(gmp_haz_df$time <= max(df$time)), 
+      gmp_haz_df[which(gmp_haz_df$time <= max(df$time)),
                  "hazard"] <- 0
     }
     gmp_haz_df$Cum_Haz_gmp <- cumsum(gmp_haz_df$hazard)
@@ -1303,10 +1275,10 @@ compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.
   })
   model_most_prob <- as.numeric(names(which.max(object$prob.changepoint)))
   num.param_piece <- mean(model_most_prob * 2 + 1)
-  log.lik.piece_most_prob <- log.lik.piece[which(num.chng == 
+  log.lik.piece_most_prob <- log.lik.piece[which(num.chng ==
                                                    model_most_prob), ]
   if (chng.num != "all") {
-    log.lik.piece <- log.lik.piece[which(num.chng == chng.num), 
+    log.lik.piece <- log.lik.piece[which(num.chng == chng.num),
     ]
   }
   indiv.lik.piece <- exp(log.lik.piece)
@@ -1314,50 +1286,50 @@ compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.
   PML.piece <- nrow(PML.indiv.piece)/colSums(PML.indiv.piece)
   minus2logPML.piece <- -2 * sum(log(PML.piece))
   WAIC.piece <- waic(log.lik.piece)$estimate[3, 1]
-  LL_max_piece <- mean(rowSums(log.lik.piece_most_prob)) + 
+  LL_max_piece <- mean(rowSums(log.lik.piece_most_prob)) +
     var(rowSums(log.lik.piece_most_prob))
   AIC_piece <- -2 * LL_max_piece + 2 * num.param_piece
   BIC_piece <- -2 * LL_max_piece + num.param_piece * log(sum(df$status))
-  jags_output <- fit_surv_models(df, max_predict = max_predict, 
-                                 n.iter.jags, n.thin.jags, n.burnin.jags, gof = gof, 
+  jags_output <- fit_surv_models(df, max_predict = max_predict,
+                                 n.iter.jags, n.thin.jags, n.burnin.jags, gof = gof,
                                  inc_waic = inc_waic, t_pred = t_pred)
-  piecewise.mod.fit <- data.frame(Model = "Piecewise Exponential", 
-                                  minustwo_logPML = minus2logPML.piece, WAIC = WAIC.piece, 
+  piecewise.mod.fit <- data.frame(Model = "Piecewise Exponential",
+                                  minustwo_logPML = minus2logPML.piece, WAIC = WAIC.piece,
                                   AIC = AIC_piece, BIC = BIC_piece)
   mod.comp <- rbind(jags_output$model.fit, piecewise.mod.fit)
-  colnames(mod.comp) <- c("Model", "-2log(PML)", "WAIC", "AIC", 
+  colnames(mod.comp) <- c("Model", "-2log(PML)", "WAIC", "AIC",
                           "BIC")
-  plot_surv <- plot.changepoint(object, add.post = F, chng.num = chng.num, 
+  plot_surv <- plot.changepoint(object, add.post = F, chng.num = chng.num,
                                 max_predict = max_predict, t_pred = t_pred, km_risk = km_risk,
                                 col_km = col_km,final_chng_only = final_chng_only)
-  df_surv_expo <- data.frame(Surv = jags_output$jags.surv$Surv.expo, 
+  df_surv_expo <- data.frame(Surv = jags_output$jags.surv$Surv.expo,
                              t_pred)
-  df_surv_weib <- data.frame(Surv = jags_output$jags.surv$Surv.weib, 
+  df_surv_weib <- data.frame(Surv = jags_output$jags.surv$Surv.weib,
                              t_pred)
-  df_surv_gamma <- data.frame(Surv = jags_output$jags.surv$Surv.gamma, 
+  df_surv_gamma <- data.frame(Surv = jags_output$jags.surv$Surv.gamma,
                               t_pred)
-  df_surv_llogis <- data.frame(Surv = jags_output$jags.surv$Surv.llogis, 
+  df_surv_llogis <- data.frame(Surv = jags_output$jags.surv$Surv.llogis,
                                t_pred)
-  df_surv_lnorm <- data.frame(Surv = jags_output$jags.surv$Surv.lnorm, 
+  df_surv_lnorm <- data.frame(Surv = jags_output$jags.surv$Surv.lnorm,
                               t_pred)
-  df_surv_gomp <- data.frame(Surv = jags_output$jags.surv$Surv.gomp, 
+  df_surv_gomp <- data.frame(Surv = jags_output$jags.surv$Surv.gomp,
                              t_pred)
-  df_surv_gen.gamma <- data.frame(Surv = jags_output$jags.surv$Surv.gen.gamma, 
+  df_surv_gen.gamma <- data.frame(Surv = jags_output$jags.surv$Surv.gen.gamma,
                                   t_pred)
   df_surv_rps <- data.frame(Surv = jags_output$jags.surv$Surv.rps)
   colnames(df_surv_rps) <- c("t_pred", "Surv")
-  df_surv_vec <- c("df_surv_expo", "df_surv_weib", "df_surv_gamma", 
-                   "df_surv_llogis", "df_surv_lnorm", "df_surv_gomp", "df_surv_gen.gamma", 
+  df_surv_vec <- c("df_surv_expo", "df_surv_weib", "df_surv_gamma",
+                   "df_surv_llogis", "df_surv_lnorm", "df_surv_gomp", "df_surv_gen.gamma",
                    "df_surv_rps")
   if (!is.null(gmp_haz_df)) {
-    plot_surv[["layers"]][[1]]$data <- plot_surv[["layers"]][[1]]$data %>% 
-      mutate(Cum_Haz_surv = -log(survival)) %>% left_join(gmp_haz_df, 
-                                                          by = "time") %>% mutate(survival = exp(-(Cum_Haz_surv + 
+    plot_surv[["layers"]][[1]]$data <- plot_surv[["layers"]][[1]]$data %>%
+      mutate(Cum_Haz_surv = -log(survival)) %>% left_join(gmp_haz_df,
+                                                          by = "time") %>% mutate(survival = exp(-(Cum_Haz_surv +
                                                                                                      Cum_Haz_gmp))) %>% dplyr::select(survival, time)
     for (q in 1:length(df_surv_vec)) {
       df_temp <- get(df_surv_vec[q])
-      df_temp <- df_temp %>% left_join(gmp_haz_df, by = c(t_pred = "time")) %>% 
-        mutate(Cum_Haz_surv = -log(Surv), Surv = exp(-(Cum_Haz_surv + 
+      df_temp <- df_temp %>% left_join(gmp_haz_df, by = c(t_pred = "time")) %>%
+        mutate(Cum_Haz_surv = -log(Surv), Surv = exp(-(Cum_Haz_surv +
                                                          Cum_Haz_gmp))) %>% dplyr::select(Surv, t_pred)
       assign(df_surv_vec[q], df_temp)
     }
@@ -1367,63 +1339,63 @@ compare.surv.mods <- function (object, max_predict = 10, chng.num = "all", plot.
     mu_surv_list[[q]] <- get(df_surv_vec[q])
   }
   mu_surv_list[[length(df_surv_vec) + 1]] <- plot_surv[["layers"]][[1]]$data
-  df_order <- c("df_surv_expo", "df_surv_weib", "df_surv_gamma", 
-                "df_surv_lnorm", "df_surv_llogis", "df_surv_gomp", "df_surv_gen.gamma", 
+  df_order <- c("df_surv_expo", "df_surv_weib", "df_surv_gamma",
+                "df_surv_lnorm", "df_surv_llogis", "df_surv_gomp", "df_surv_gen.gamma",
                 "df_surv_rps")
   df_selc <- df_order[order(jags_output$model.fit[, gof])[1:plot.best]]
-  model_names <- gsub("df_surv_", "", df_order)[order(jags_output$model.fit[, 
+  model_names <- gsub("df_surv_", "", df_order)[order(jags_output$model.fit[,
                                                                             gof])[1:plot.best]]
-  col_vec <- c("black", "purple", "yellow", "cyan", "brown", 
+  col_vec <- c("black", "purple", "yellow", "cyan", "brown",
                "blue", "pink", "green", "orange", "red")
-  col_name <- c("KM curve", "Piecewise Expo", "Exponential", 
-                "Weibull", "Gamma", "Log-Logistic", "Log-Normal", "Gompertz", 
+  col_name <- c("KM curve", "Piecewise Expo", "Exponential",
+                "Weibull", "Gamma", "Log-Logistic", "Log-Normal", "Gompertz",
                 "Gen. Gamma", "Royston-Parmar")
   colors <- col_vec
   names(colors) <- col_name
-  col_selc <- c(1, 2, order(jags_output$model.fit[, gof])[1:plot.best] + 
+  col_selc <- c(1, 2, order(jags_output$model.fit[, gof])[1:plot.best] +
                   2)
   for (i in 1:plot.best) {
-    plot_surv <- plot_surv + geom_line(get(df_selc[i]), 
-                                       mapping = aes_string(y = "Surv", x = "t_pred", colour = paste0("'", 
+    plot_surv <- plot_surv + geom_line(get(df_selc[i]),
+                                       mapping = aes_string(y = "Surv", x = "t_pred", colour = paste0("'",
                                                                                                       col_name[col_selc[i + 2]], "'")), inherit.aes = F)
   }
-  
+
   #Hack to fix legend
   df_km <- data.frame(Surv = c(0), t_pred = 0)
-  
-  plot_surv + geom_line(df_km , 
+
+  plot_surv + geom_line(df_km ,
                         mapping = aes_string(y = "Surv", x = "t_pred", colour = "'KM curve'"), inherit.aes = F)
-  
-  plot_surv <- plot_surv + geom_line(df_km , 
+
+  plot_surv <- plot_surv + geom_line(df_km ,
                                      mapping = aes_string(y = "Surv", x = "t_pred", colour = "'Piecewise Expo'"), inherit.aes = F)
-  
-  
-  
+
+
+
   if (!is.null(km_risk)) {
     result.km <- survfit(Surv(time, status) ~ 1, data = df)
-    max_time <- result.km$time[max(which(result.km$n.risk/result.km$n >= 
+    max_time <- result.km$time[max(which(result.km$n.risk/result.km$n >=
                                            km_risk))]
   }
   else {
     max_time <- max(df$time)
   }
-  plot_Surv_all <- plot_surv + scale_color_manual(values = colors[col_selc]) + 
-    labs(x = "Time", y = "Survival", color = "Survival Functions") + 
-    theme_classic() + theme(legend.position = c(0.9, 0.8)) + 
+  plot_Surv_all <- plot_surv + scale_color_manual(values = colors[col_selc]) +
+    labs(x = "Time", y = "Survival", color = "Survival Functions") +
+    theme_classic() + theme(legend.position = c(0.9, 0.8)) +
     geom_vline(xintercept = max_time, linetype = "dotted")
-  return(list(mod.comp = mod.comp, jag.models = jags_output$jags.models, 
-              jags.surv = jags_output$jags.surv, plot_Surv_all = plot_Surv_all, 
+  return(list(mod.comp = mod.comp, jag.models = jags_output$jags.models,
+              jags.surv = jags_output$jags.surv, plot_Surv_all = plot_Surv_all,
               mu_surv_list = mu_surv_list))
 }
 
 
 
 plot.pos_changepoint <- function(obj, breaks = NULL, probs = c(0.025, 0.975)){
-  
+
   num.breaks <- as.numeric(names(which.max(obj$prob.changepoint)))
   num.changepoints <- apply(obj$k.stacked, 1, function(x){length(na.omit(x))})
   index_selc <- which(num.changepoints == num.breaks)
-  
+
   if(num.breaks == 1){
     change.point_df <- data.frame(changetime = obj$changepoint[index_selc,1],
                                   changepoint = 1)
@@ -1431,15 +1403,15 @@ plot.pos_changepoint <- function(obj, breaks = NULL, probs = c(0.025, 0.975)){
     change.point_df <- data.frame(changetime = c(unlist(obj$changepoint[index_selc,1:num.breaks])),
                                   changepoint = rep(1:num.breaks,each = length(index_selc)))
   }
-  
+
   print(change.point_df %>% dplyr::filter(changepoint ==num.breaks) %>% pull(changetime)%>% quantile(probs = probs) %>% round(digits = 2))
-  
-  
+
+
   change.point_df$changepoint <- factor(change.point_df$changepoint)
-  
+
   change.point_plot <- change.point_df %>% group_by(changepoint, changetime) %>%
     dplyr::summarize(n = dplyr::n()) %>% mutate(perc = (n*100/length(index_selc)))
-  
+
   if(is.null(breaks)){
     ggplot(change.point_plot %>% dplyr::filter(perc > .5), aes(x = changetime, y = perc, color=changepoint))+
       geom_pointrange(aes(ymin=0, ymax=perc), size = 0.02)+
@@ -1454,21 +1426,21 @@ plot.pos_changepoint <- function(obj, breaks = NULL, probs = c(0.025, 0.975)){
       scale_y_continuous(name="Probability of Change-point (%)")+
       ggtitle("Posterior Distribution of Change-points")+
       scale_x_continuous(name="Time", breaks = breaks )
-    
+
   }
-  
-  
-  
-  
+
+
+
+
 }
 
 
 compare_boot_sims <- function (mod_parametric_orig, follow_up_data){
   t <- mod_parametric_orig$mu_surv_list[[1]][, 2]
-  mod_names <- c("expo", "weibull", "gamma", "llogis", "lnorm", 
+  mod_names <- c("expo", "weibull", "gamma", "llogis", "lnorm",
                  "gomp", "gen.gamma", "rps", "piecewise")
   for (i in 1:length(mod_names)) {
-    assign(paste0("Surv.", mod_names[i]), 
+    assign(paste0("Surv.", mod_names[i]),
            mod_parametric_orig$mu_surv_list[[i]][,grep("Surv|survival",colnames(mod_parametric_orig$mu_surv_list[[i]]))])
   }
   n.boots <- 1000
@@ -1478,13 +1450,13 @@ compare_boot_sims <- function (mod_parametric_orig, follow_up_data){
   surv_km <- survfit(Surv(time, status) ~ 1, data = follow_up_data)
   for (b in 1:n.boots) {
     index <- b
-    df_surv_boot <- bs[[1]][[index]][["data"]][bs[[1]][[index]]$id, 
+    df_surv_boot <- bs[[1]][[index]][["data"]][bs[[1]][[index]]$id,
     ]
     surv_boot_km <- survfit(Surv(time, status) ~ 1, data = df_surv_boot)
-    surv_boot_km.df <- data.frame(cbind(surv_boot_km[[c("time")]], 
-                                        surv_boot_km[[c("surv")]], surv_boot_km[[c("upper")]], 
+    surv_boot_km.df <- data.frame(cbind(surv_boot_km[[c("time")]],
+                                        surv_boot_km[[c("surv")]], surv_boot_km[[c("upper")]],
                                         surv_boot_km[[c("lower")]]))
-    colnames(surv_boot_km.df) <- c("time", "survival", "upper", 
+    colnames(surv_boot_km.df) <- c("time", "survival", "upper",
                                    "lower")
     surv_km_time <- rep(NA, length(t))
     for (i in 1:length(t)) {
@@ -1495,62 +1467,62 @@ compare_boot_sims <- function (mod_parametric_orig, follow_up_data){
         surv_km_time[i] <- NA
       }
       else {
-        surv_km_time[i] <- surv_boot_km.df$survival[max(which(surv_boot_km.df$time <= 
+        surv_km_time[i] <- surv_boot_km.df$survival[max(which(surv_boot_km.df$time <=
                                                                 t[i]))]
       }
     }
     t_eval <- !is.na(surv_km_time)
     AUC_true[b] <- integrate.xy(t[t_eval], surv_km_time[t_eval])
-    AUC_diff[b, ] = abs(c(integrate.xy(t[t_eval], Surv.expo[t_eval]), 
-                          integrate.xy(t[t_eval], Surv.weibull[t_eval]), integrate.xy(t[t_eval], 
-                                                                                      Surv.gamma[t_eval]), integrate.xy(t[t_eval], 
-                                                                                                                        Surv.lnorm[t_eval]), integrate.xy(t[t_eval], 
-                                                                                                                                                          Surv.llogis[t_eval]), integrate.xy(t[t_eval], 
-                                                                                                                                                                                             Surv.gomp[t_eval]), integrate.xy(t[t_eval], 
-                                                                                                                                                                                                                              Surv.gen.gamma[t_eval]), integrate.xy(t[t_eval], 
-                                                                                                                                                                                                                                                                    Surv.rps[t_eval]), integrate.xy(t[t_eval], Surv.piecewise[t_eval]), 
+    AUC_diff[b, ] = abs(c(integrate.xy(t[t_eval], Surv.expo[t_eval]),
+                          integrate.xy(t[t_eval], Surv.weibull[t_eval]), integrate.xy(t[t_eval],
+                                                                                      Surv.gamma[t_eval]), integrate.xy(t[t_eval],
+                                                                                                                        Surv.lnorm[t_eval]), integrate.xy(t[t_eval],
+                                                                                                                                                          Surv.llogis[t_eval]), integrate.xy(t[t_eval],
+                                                                                                                                                                                             Surv.gomp[t_eval]), integrate.xy(t[t_eval],
+                                                                                                                                                                                                                              Surv.gen.gamma[t_eval]), integrate.xy(t[t_eval],
+                                                                                                                                                                                                                                                                    Surv.rps[t_eval]), integrate.xy(t[t_eval], Surv.piecewise[t_eval]),
                           NA) - AUC_true[b])
     Surv.piecewise
-    AUC_diff2[b, ] = c(integrate.xy(t[t_eval], abs(Surv.expo[t_eval] - 
-                                                     surv_km_time[t_eval])), integrate.xy(t[t_eval], 
-                                                                                          abs(Surv.weibull[t_eval] - surv_km_time[t_eval])), 
-                       integrate.xy(t[t_eval], abs(Surv.gamma[t_eval] - 
-                                                     surv_km_time[t_eval])), integrate.xy(t[t_eval], 
-                                                                                          abs(Surv.lnorm[t_eval] - surv_km_time[t_eval])), 
-                       integrate.xy(t[t_eval], abs(Surv.llogis[t_eval] - 
-                                                     surv_km_time[t_eval])), integrate.xy(t[t_eval], 
-                                                                                          abs(Surv.gomp[t_eval] - surv_km_time[t_eval])), 
-                       integrate.xy(t[t_eval], abs(Surv.gen.gamma[t_eval] - 
-                                                     surv_km_time[t_eval])), integrate.xy(t[t_eval], 
-                                                                                          abs(Surv.rps[t_eval] - surv_km_time[t_eval])), 
-                       integrate.xy(t[t_eval], abs(Surv.piecewise[t_eval] - 
+    AUC_diff2[b, ] = c(integrate.xy(t[t_eval], abs(Surv.expo[t_eval] -
+                                                     surv_km_time[t_eval])), integrate.xy(t[t_eval],
+                                                                                          abs(Surv.weibull[t_eval] - surv_km_time[t_eval])),
+                       integrate.xy(t[t_eval], abs(Surv.gamma[t_eval] -
+                                                     surv_km_time[t_eval])), integrate.xy(t[t_eval],
+                                                                                          abs(Surv.lnorm[t_eval] - surv_km_time[t_eval])),
+                       integrate.xy(t[t_eval], abs(Surv.llogis[t_eval] -
+                                                     surv_km_time[t_eval])), integrate.xy(t[t_eval],
+                                                                                          abs(Surv.gomp[t_eval] - surv_km_time[t_eval])),
+                       integrate.xy(t[t_eval], abs(Surv.gen.gamma[t_eval] -
+                                                     surv_km_time[t_eval])), integrate.xy(t[t_eval],
+                                                                                          abs(Surv.rps[t_eval] - surv_km_time[t_eval])),
+                       integrate.xy(t[t_eval], abs(Surv.piecewise[t_eval] -
                                                      surv_km_time[t_eval])), NA)
   }
   index_selc <- which(t <= max(follow_up_data$time))
   surv_KM <- survival:::survmean(surv_km, rmean = max(surv_km$time))
   rmean_KM <- as.numeric(surv_KM[[1]][min(grep("rmean", names(surv_KM[[1]])))])
-  AUC = c(integrate.xy(t[index_selc], Surv.expo[index_selc]), 
-          integrate.xy(t[index_selc], Surv.weibull[index_selc]), 
-          integrate.xy(t[index_selc], Surv.gamma[index_selc]), 
-          integrate.xy(t[index_selc], Surv.lnorm[index_selc]), 
-          integrate.xy(t[index_selc], Surv.llogis[index_selc]), 
-          integrate.xy(t[index_selc], Surv.gomp[index_selc]), 
-          integrate.xy(t[index_selc], Surv.gen.gamma[index_selc]), 
-          integrate.xy(t[index_selc], Surv.rps[index_selc]), integrate.xy(t[index_selc], 
+  AUC = c(integrate.xy(t[index_selc], Surv.expo[index_selc]),
+          integrate.xy(t[index_selc], Surv.weibull[index_selc]),
+          integrate.xy(t[index_selc], Surv.gamma[index_selc]),
+          integrate.xy(t[index_selc], Surv.lnorm[index_selc]),
+          integrate.xy(t[index_selc], Surv.llogis[index_selc]),
+          integrate.xy(t[index_selc], Surv.gomp[index_selc]),
+          integrate.xy(t[index_selc], Surv.gen.gamma[index_selc]),
+          integrate.xy(t[index_selc], Surv.rps[index_selc]), integrate.xy(t[index_selc],
                                                                           Surv.piecewise[index_selc]), rmean_KM)
-  model_names_full <- c("Exponential", "Weibull", "Gamma", 
-                        "Log-Normal", "Log-Logistic", "Gompertz", "Generalized Gamma", 
+  model_names_full <- c("Exponential", "Weibull", "Gamma",
+                        "Log-Normal", "Log-Logistic", "Gompertz", "Generalized Gamma",
                         "Royston-Parmar", "Piecewise")
   index_vals <- rep(NA, length(model_names_full))
   for (i in 1:length(model_names_full)) {
-    index_vals[i] <- grep(paste0("^", model_names_full[i]), 
+    index_vals[i] <- grep(paste0("^", model_names_full[i]),
                           mod_parametric_orig$mod.comp$Model)
   }
-  mod_compfinal <- rbind(mod_parametric_orig$mod.comp[index_vals, 
+  mod_compfinal <- rbind(mod_parametric_orig$mod.comp[index_vals,
                                                       c("Model", "WAIC")], c(NA, NA, NA, NA))
   mod_compfinal$Model[nrow(mod_compfinal)] <- "True Observations"
   mod_compfinal <- cbind(mod_compfinal, AUC, AUC_diff = colMeans(AUC_diff), AUC_diff2 = colMeans(AUC_diff2))
-  mod_compfinal <- mod_compfinal[order(mod_compfinal$AUC_diff), 
+  mod_compfinal <- mod_compfinal[order(mod_compfinal$AUC_diff),
   ] %>% mutate_if(is.numeric, round, digits = 2)
   mod_compfinal
 }
@@ -1561,10 +1533,10 @@ compare_boot_sims <- function (mod_parametric_orig, follow_up_data){
 
 #' Digitise KM curves
 #'
-#' @param surv_inp 
-#' @param nrisk_inp 
-#' @param km_output 
-#' @param ipd_output 
+#' @param surv_inp
+#' @param nrisk_inp
+#' @param km_output
+#' @param ipd_output
 #'
 #' @return
 #' @export
@@ -1576,25 +1548,25 @@ digitise <- function(surv_inp,nrisk_inp,km_output="KMdata.txt",ipd_output="IPDda
   # km_output = the name of the file to which the KM data will be written
   # ipd_output = the name of the file to which the individual level data data will be written
   # Adapted from Patricia Guyot (2012) - Taken from survHE all credit to those package authors
-  
+
   # Defines the working directory (same as the one where the DigitizeIT data are)
   working.dir <- dirname(surv_inp)
   ####  setwd(working.dir); working.dir <- paste0(getwd(),"/")
   tot.events<-"NA"  #tot.events = total no. of events reported. If not reported, then tot.events="NA"
   arm.id<-1         #arm indicator
-  
+
   #Read in survival times read by digizeit
   digizeit <- read.table(surv_inp,header=TRUE,row.names=NULL)
   t.S<-digizeit[,"time"]     # times recorded from DigitizeIT
   S<-digizeit[,"survival"]       # survival from DigitizeIT
-  
+
   #Read in published numbers at risk, n.risk, at time, t.risk, lower and upper indexes for time interval
   pub.risk<-read.table(nrisk_inp,header=TRUE,row.names=NULL)
   ## Needs to get rid of possible time intervals with no digitised observations
   pub.risk <- pub.risk[pub.risk[,4]>0,]
   ## Needs to recode the first ever occurrence to 1??
   if (!(pub.risk[1,3]==1)) {pub.risk[1,3] <- 1}
-  
+
   # Defines the variables needed for the algorithm
   t.risk<-pub.risk[,2]
   lower<-pub.risk[,3]
@@ -1602,7 +1574,7 @@ digitise <- function(surv_inp,nrisk_inp,km_output="KMdata.txt",ipd_output="IPDda
   n.risk<-pub.risk[,5]
   n.int<-length(n.risk)
   n.t<- upper[n.int]
-  
+
   #Initialise vectors
   arm <- rep(arm.id,n.risk[1])
   n.censor <- rep(0,(n.int-1))
@@ -1611,7 +1583,7 @@ digitise <- function(surv_inp,nrisk_inp,km_output="KMdata.txt",ipd_output="IPDda
   KM.hat <- rep(1,n.t)
   last.i <- rep(1,n.int)
   sumdL <- 0
-  
+
   # Executes Patricia's algorithm to determine censoring
   if (n.int > 1){
     #Time intervals 1,...,(n.int-1)
@@ -1735,11 +1707,11 @@ digitise <- function(surv_inp,nrisk_inp,km_output="KMdata.txt",ipd_output="IPDda
       }
     }
   }
-  
+
   # Now writes the results to the output files
   KMdata <- data.frame(time=t.S,n.risk=n.hat[1:n.t],n.event=d,n.censored=cen)
   write.table(KMdata,km_output,sep="\t",row.names=FALSE,col.names=TRUE)
-  
+
   # And forms IPD data
   #Initialise vectors
   t.IPD <- rep(t.S[n.t],n.risk[1])
@@ -1764,7 +1736,7 @@ digitise <- function(surv_inp,nrisk_inp,km_output="KMdata.txt",ipd_output="IPDda
   #Output IPD
   IPD <- data.frame(time=t.IPD,status=event.IPD,arm)
   write.table(IPD,ipd_output,sep="\t",row.names=FALSE,col.names=TRUE)
-  
+
   if (dirname(km_output)==".") {
     cat("\n")
     cat(paste0("Kaplan Meier data written to file: ",working.dir,km_output))
