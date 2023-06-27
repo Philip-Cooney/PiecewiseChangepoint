@@ -4,24 +4,33 @@
 \alias{fit_surv_models}
 \title{Fitting Bayesian Parametric Models with JAGS}
 \usage{
-fit_surv_models(df, max_predict = 10)
+fit_surv_models(
+  df,
+  max_predict = 10,
+  n.iter.jags = 2000,
+  n.thin.jags = NULL,
+  n.burnin.jags = NULL,
+  gof,
+  inc_waic = T,
+  t_pred = NULL
+)
 }
 \arguments{
 \item{df}{standard dataframe for time-to-event data. Two columns required, time (to event or censoring) and status (indicating event or censoring).}
 
-\item{max_predict}{maximum survival time to be predicted from the JAGS model. Default is 10, however, depending on the timescale this should be changed.}
+\item{max_predict}{maximum survival time to be predicted from the survival models. Default is 10, however, depending on the timescale this should be changed.}
 }
 \value{
 A list of with the following items:
 \itemize{
-\item \strong{model.fit}: A dataframe with the PML and WAIC for the six parametric models fitted by JAGS.
+\item \strong{model.fit}: A dataframe with the PML and WAIC for the seven parametric models fitted by JAGS/Stan.
 \item \strong{jags.models}: A list containing the posterior simulations of the 6 JAGS models (fit using the \code{\link[R2jags]{rjags}} function).
-\item \strong{jags.surv}: A list of the survival probabilities for the prespecified times from the 6 JAGS models.
+\item \strong{jags.surv}: A list of the survival probabilities for the prespecified times from the 7 JAGS/Stan models.
 }
 }
 \description{
 In order to compare the change-point model with other common parametric survival models using Pseudo-Marginal Likelihood (PML) and Widely Applicable Information Criterion (WAIC) we need to fit them in a Bayesian framework.
-Requires Just Another Gibbs Sampler (JAGS) along with the packages \code{\link[R2jags]{rjags}} and \code{\link[loo]{waic}} to run. The JAGS models that are produced by this function should be assessed for convergence. Additionally the chains may need to be run longer.
+Requires Just Another Gibbs Sampler (JAGS) along with the packages \code{\link[R2jags]{rjags}},\code{\link[rstan]{rstan}}  and \code{\link[loo]{waic}} to run. The JAGS models that are produced by this function should be assessed for convergence. Additionally the chains may need to be run longer.
 The following models are fit (Note that the parameterization used in JAGS is not equivalent to the \code{\link[flexsurv]{flexsurvreg}} parameterization for the Weibull, Log-Logistic and Generalized Gamma):
 \itemize{
 \item \strong{Exponential}
@@ -30,10 +39,9 @@ The following models are fit (Note that the parameterization used in JAGS is not
 \item \strong{Log-Logistic}
 \item \strong{Gompertz}
 \item \strong{Generalized Gamma}
+\item \strong{Royston-Parmar Cubic Spline (1 or 2 know)}
 }
 }
-\examples{
-\dontrun{
-mod.comp.jags <-fit_surv_models(df)
-}
+\details{
+Number of knots for Royston-Parmar is made by assessing, and finding which model gives the lowest WAIC.
 }

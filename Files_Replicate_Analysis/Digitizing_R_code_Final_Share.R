@@ -1,14 +1,14 @@
 #============================================================================
 # Preliminaries - load required packages
-# Notes: If the following packages aren't already installed, then 
-#        they can be  installed from CRAN by typing, for example: 
-#        install.packages("package-name"). Note that this requires an 
+# Notes: If the following packages aren't already installed, then
+#        they can be  installed from CRAN by typing, for example:
+#        install.packages("package-name"). Note that this requires an
 #        internet connection. Installing rstan for the first time requires
 #        a few additional steps, see http://mc-stan.org/interfaces/rstan
-#        for details. Similarly installing rjags requires additional steps, 
-#        see https://onlinelibrary.wiley.com/doi/pdf/10.1002/9781119287995.app1  
+#        for details. Similarly installing rjags requires additional steps,
+#        see https://onlinelibrary.wiley.com/doi/pdf/10.1002/9781119287995.app1
 #
-# For PiecewiseChangepoint package, either the package binary should be 
+# For PiecewiseChangepoint package, either the package binary should be
 # installed, or run devtools::install_github("Anon19820/PiecewiseChangepoint")
 # (if devtools is installed)
 #============================================================================
@@ -24,32 +24,6 @@ library("ggplot2")
 library("sjstats")
 library("rstan")
 library("R2jags")
-
-#Helper function
-compare_dco <- function (all_surv_mods, old_dco, new_dco, km_risk = 0.1, col_new_dco = "grey"){
-  result.km_old <- survfit(Surv(time, status) ~ 1, data = old_dco)
-  if (!is.null(km_risk)) {
-    max_time <- result.km_old$time[max(which(result.km_old$n.risk/result.km_old$n >= 
-                                               km_risk))]
-  }
-  result.km <- survfit(Surv(time, status) ~ 1, data = new_dco)
-  km.data <- data.frame(cbind(result.km[[c("time")]], result.km[[c("surv")]], 
-                              result.km[[c("upper")]], result.km[[c("lower")]]))
-  colnames(km.data) <- c("time", "survival", "upper", "lower")
-  if (is.null(km_risk)) {
-    km.data <- km.data %>% dplyr::filter(time >= max(old_dco$time))
-  }
-  else {
-    km.data <- km.data %>% dplyr::filter(time >= max_time)
-  }
-  all_surv_mods$plot_Surv_all + geom_step(data = km.data, aes(x = time, 
-                                                              y = survival),
-                                          colour = col_new_dco, inherit.aes = F) + 
-    geom_step(data = km.data,aes(x = time, y = upper), colour = col_new_dco, linetype = "dashed",inherit.aes = F) +
-    geom_step(data = km.data, aes(x = time,y = lower), colour = col_new_dco, linetype = "dashed", inherit.aes = F)
-}
-
- 
 
 # Create a pathway which will import files and export all the results
 #All the required files exist in the "Files_Replicate_Analysis" folder (if downloaded from Github).
@@ -93,32 +67,32 @@ for(i in 1:length(excel_file)){
                            "survival")
   nrisk_df <- read.xlsx(paste0(path, folder_name[i],"/",excel_file[i], ".xlsx"),
                         "nrisk")
-  
+
   write.table(survival_df, paste0(path, folder_name[i],"/survival.txt"), row.names = F)
-  
+
   write.table(nrisk_df, paste0(path, folder_name[i],"/nrisk.txt"), row.names = F)
-  
+
   digitise(paste0(path,folder_name[i],"/survival.txt"),
            paste0(path,folder_name[i],"/nrisk.txt"),
            km_output = paste0(path,folder_name[i], "/KMdata.txt"),
            ipd_output = paste0(path,folder_name[i], "/IPDdata.txt"))
-  
+
   digitized_IPD <- read.table(paste0(path,folder_name[i],"/IPDdata.txt"), header = T)
   digitized_IPD <- data.frame(apply(digitized_IPD,2, as.numeric))
   digitized_IPD$arm <- folder_name[i]
   assign(folder_name[i], digitized_IPD)
-  
+
   km.fit <- survfit(Surv(time, status)~1, data.frame(digitized_IPD))
-  
+
   # plot(km.fit, xaxt = "n", yaxt = "n")
   # axis(1, at=0:45, labels=0:45)
   # axis(2, at=seq(0,1, by = 0.1), labels=seq(0,1, by = 0.1))
   #
   median_km <-
     round(survival:::survmean(km.fit, scale = 1, 1)$matrix[["median"]],digits = 2)
-  
+
   plt_time <- (round(max(digitized_IPD[,1]),0)+1)
-  
+
   #Plot the Kaplan Meier curve
   png(paste0(path, folder_name[i],"/KM curve.png"), width = 960, height = 480)
   plot(km.fit, main = paste0("KM curve : ", excel_file[i]),
@@ -277,13 +251,13 @@ Conditional_Death_df_temp <- Conditional_Death_df_temp %>% filter(age >= age_bas
 
 
 #Data (or Model Cycle length) is in months so need to adjust Conditional Death Probabilities
-#If Survival data/Cycle Length is in: 
+#If Survival data/Cycle Length is in:
 # - Years time_factor is = 1
 # - Months time_factor is 12
 # - Weeks time_factor is round(365.25/7, digits = 0)
 
 #We need to convert probability conditional death to a rate and
-# divide to the appropriate cycle length 
+# divide to the appropriate cycle length
 #See Fleurence et al "Rates and Probabilities in Economic Modelling."https://doi.org/10.2165/00019053-200725010-00002
 #Equation 2; t = timefactor
 time_factor_TA396 <- 12
@@ -298,10 +272,10 @@ TA396_DT_OS_Initial_all_mods <- compare.surv.mods(TA396_DT_OS_Initial_model, max
                                                    n.thin.jags = 1,
                                                    n.burnin.jags = n.burnin.jags,
                                                    chng.num = max_prob_chng,
-                                                   gmp_haz_df =gmp_haz_df_TA396, 
+                                                   gmp_haz_df =gmp_haz_df_TA396,
                                                   col_km = "grey" )
 
-TA396_DT_OS_gg_final <-compare_dco(TA396_DT_OS_Initial_all_mods, TA396_DT_OS_Initial_df,`TA396_D+T_OS_Update`)+ xlab("Time (Months)")
+TA396_DT_OS_gg_final <-PiecewiseChangepoint:::compare_dco(TA396_DT_OS_Initial_all_mods, TA396_DT_OS_Initial_df,`TA396_D+T_OS_Update`)+ xlab("Time (Months)")
 ggsave(filename =paste0(path,"pub_plots_tabs/TA396_DT_OS_Surv.png"),plot = TA396_DT_OS_gg_final, height = 5.59, width = 7)
 
 #Compare the RMST time using the bootstrap of the KM curve
@@ -317,7 +291,7 @@ km_update <- survfit(Surv(time, status)~1, data = `TA396_D+T_OS_Update`)
 spline_many <- flexsurvspline(Surv(time, status)~1, data =TA396_DT_OS_Initial_df, k = 5)
 
 gibbs_sampler<- PiecewiseChangepoint:::gibbs.sampler(df =TA396_DT_OS_Initial_df, num.breaks = 10, n.iter =5000,
-                                     burn_in = 100, num.chains = 2, 
+                                     burn_in = 100, num.chains = 2,
                                      n.thin = 1, alpha.hyper = 1, beta.hyper = 1)
 
 colMeans(gibbs_sampler$changepoint)
@@ -330,7 +304,7 @@ lines(y = km_update$surv,km_update$time, col = "blue" )
 lines(x  = c(0:70),rowMeans(Surv_gibbs), col = "green")
 
 
-rm(TA396_DT_OS_Initial_all_mods,TA396_DT_OS_boot, max_prob_chng) # Delete unneeded objects to save memory 
+rm(TA396_DT_OS_Initial_all_mods,TA396_DT_OS_boot, max_prob_chng) # Delete unneeded objects to save memory
 
 ## 4.2 PFS ----
 
@@ -359,7 +333,7 @@ max_prob_chng <-   as.numeric(names(which.max(TA396_DT_PFS_Initial_model$prob.ch
 TA396_DT_PFS_all_mods <- compare.surv.mods(TA396_DT_PFS_Initial_model, max_predict = 7*12,
                                            n.iter.jags = n.iter.jags,
                                            n.thin.jags = 1,
-                                           n.burnin.jags = n.burnin.jags, 
+                                           n.burnin.jags = n.burnin.jags,
                                            chng.num = max_prob_chng,
                                            gmp_haz_df =gmp_haz_df_TA396,
                                            col_km = "grey",
@@ -370,7 +344,7 @@ TA396_DT_PFS_boot <- PiecewiseChangepoint:::compare_boot_sims(mod_parametric_ori
 
 write.xlsx(TA396_DT_PFS_boot, paste0(path,"pub_plots_tabs/TA396_DT_PFS_AUC.xlsx"))
 
-TA396_DT_PFS_gg_final <-compare_dco(TA396_DT_PFS_all_mods, TA396_DT_PFS_Initial_df,`TA396_D+T_PFS_Update`)
+TA396_DT_PFS_gg_final <-PiecewiseChangepoint:::compare_dco(TA396_DT_PFS_all_mods, TA396_DT_PFS_Initial_df,`TA396_D+T_PFS_Update`)
 
 TA396_DT_PFS_gg_final <- TA396_DT_PFS_gg_final+ xlab("Time (Months)")
 ggsave(filename =paste0(path,"pub_plots_tabs/TA396_DT_PFS_Surv.png"),plot = TA396_DT_PFS_gg_final , height = 5.59, width = 7)
@@ -383,7 +357,7 @@ km_update <- survfit(Surv(time, status)~1, data = `TA396_D+T_PFS_Update`)
 spline_many <- flexsurvspline(Surv(time, status)~1, data =TA396_DT_PFS_Initial_df, k = 5)
 
 gibbs_sampler<- PiecewiseChangepoint:::gibbs.sampler(df =TA396_DT_PFS_Initial_df, num.breaks = 2, n.iter =5000,
-                                                     burn_in = 100, num.chains = 2, 
+                                                     burn_in = 100, num.chains = 2,
                                                      n.thin = 1, alpha.hyper = 1, beta.hyper = 1)
 
 colMeans(gibbs_sampler$changepoint)
@@ -395,7 +369,7 @@ plot(spline_many, t = c(0:70), xlim = c(0,70))
 lines(y = km_update$surv,km_update$time, col = "blue" )
 lines(x  = c(0:70),rowMeans(Surv_gibbs), col = "green")
 
-rm(TA396_DT_PFS_all_mods,TA396_DT_PFS_boot, max_prob_chng) # Delete unneeded objects to save memory 
+rm(TA396_DT_PFS_all_mods,TA396_DT_PFS_boot, max_prob_chng) # Delete unneeded objects to save memory
 
 
 
@@ -455,7 +429,7 @@ TA428_PEM_OS_Initial_all_mods <- compare.surv.mods(TA428_PEM_OS_Initial_model, m
                                                   km_risk =NULL)
 
 # Compare with later data cut-off (TA396_D+T_OS_Update)
-TA428_PEM_OS_gg_final <-compare_dco(TA428_PEM_OS_Initial_all_mods, TA428_PEM_OS_Initial, TA428_PEM_OS_Update,
+TA428_PEM_OS_gg_final <-PiecewiseChangepoint:::compare_dco(TA428_PEM_OS_Initial_all_mods, TA428_PEM_OS_Initial, TA428_PEM_OS_Update,
                                     km_risk =NULL)
 
 TA428_PEM_OS_gg_final <- TA428_PEM_OS_gg_final+ xlab("Time (Months)")
@@ -468,7 +442,7 @@ TA428_PEM_OS_boot <- PiecewiseChangepoint:::compare_boot_sims(mod_parametric_ori
 write.xlsx(TA428_PEM_OS_boot, paste0(path,"pub_plots_tabs/TA428_PEM_OS_AUC.xlsx"))
 
 
-rm(TA428_PEM_OS_Initial_all_mods,TA428_PEM_OS_boot, max_prob_chng) # Delete unneeded objects to save memory 
+rm(TA428_PEM_OS_Initial_all_mods,TA428_PEM_OS_boot, max_prob_chng) # Delete unneeded objects to save memory
 
 # 6 TA447 ----
 
@@ -518,7 +492,7 @@ TA447_PEM_OS_Initial_all_mods <- compare.surv.mods(TA447_PEM_OS_Initial_model, m
                                                 gmp_haz_df =gmp_haz_df_TA447,
                                                 col_km = "grey")
 
-TA447_PEM_OS_gg_final <-compare_dco(TA447_PEM_OS_Initial_all_mods, TA447_PEM_OS_Initial, TA447_PEM_OS_Update)
+TA447_PEM_OS_gg_final <-PiecewiseChangepoint:::compare_dco(TA447_PEM_OS_Initial_all_mods, TA447_PEM_OS_Initial, TA447_PEM_OS_Update)
 TA447_PEM_OS_gg_final <- TA447_PEM_OS_gg_final+ xlab("Time (Months)")
 ggsave(filename =paste0(path,"pub_plots_tabs/TA447_PEM_OS_Surv.png"),plot = TA447_PEM_OS_gg_final, height = 5.59, width = 7)
 
@@ -543,7 +517,7 @@ mod.names <- c("TA396_DT_OS_Initial_model",
                "TA347_N_OS_model",
                "TA347_Doce_PFS_model",
                "TA347_N_PFS_model",
-               "TA428_PEM_OS_Initial_model", 
+               "TA428_PEM_OS_Initial_model",
                "TA447_PEM_OS_Initial_model")
 
 
@@ -564,14 +538,14 @@ arm <- c("DT", "DT", "Comp","BRAF_V",
 
 #undebug(summary.changepoint_mod)
 summary.changepoint_mod <- function(object, chng.num = NULL){
-  
+
   if (is.null(chng.num)) {
     chng.prob <- as.numeric(names(which.max(object$prob.changepoint)))
   } else {
     chng.prob <- chng.num
   }
-  
-  
+
+
   k <- object$k.stacked
   lambda <- object$lambda
   changepoint <- object$changepoint
@@ -581,33 +555,33 @@ summary.changepoint_mod <- function(object, chng.num = NULL){
   if(chng.prob == 0){
     changepoint_curr <- NULL
   }else{
-    
+
     changepoint_curr <- data.frame(changepoint[which(num.changepoints == chng.prob), 1:chng.prob])
-    
+
   }
   lambda_curr <- data.frame(lambda[which(num.changepoints == chng.prob), 1:(chng.prob + 1)])
-  
+
   if(chng.prob == 0){
-    
+
     return_vec <- c(NA,NA,NA,
                     round(tail(colMeans(lambda_curr), n = 1), 3))
-    
+
   }else{
     quantile_vec <- apply(changepoint_curr, 2, quantile, probs = c(0.025,0.975))
-    
+
     return_vec <- c(round(tail(colMeans(changepoint_curr), n = 1),2),
                     round(quantile_vec[,ncol(quantile_vec)],2),
                     round(tail(colMeans(lambda_curr), n = 1), 3))
-    
-    
+
+
   }
   return(return_vec)
-  
+
 }
 output_mat <- matrix(ncol = 4, nrow = length(arm))
 for(i in 1:nrow(output_mat)){
   output_mat[i, ] <- summary.changepoint_mod(get(mod.names[i]))
-  
+
 }
 
 colnames(output_mat) <- c("final_changepoint_months","final_changepoint_months_0.025",
@@ -651,7 +625,7 @@ write.xlsx(output, paste0(path, "pub_plots_tabs/Piecewise_TA_results.xlsx"))
 
 
 # 8 Plot Cum Hazard and Hazard Functions for TA428 ----
-list.of.packages <- c("Epi","bshazard","muhaz","ggpubr") 
+list.of.packages <- c("Epi","bshazard","muhaz","ggpubr")
 
 #install.packages(list.of.packages)
 
@@ -672,32 +646,32 @@ ggtitle_vec <- c("Hazard Functions for KEYNOTE-010 trial data available at TA428
 cum_haz_vec <- c("Cum. Hazard Function for KEYNOTE-010 trial data available at TA428", "Cum. Hazard Functions for 5 year update of KEYNOTE-010 trial data")
 
 for(i in 1:2){
-  
-  
+
+
   data_used <- get(paste0(data_vec[i]))
   model_used <- get(paste0(model_vec[i]))
   data_used$enter <- 0
   max_time <- max(data_used$time)
   model_best_fit <- as.numeric(names(which.max(model_used$prob.changepoint)))
-  
-  
+
+
   bshazard.fit <- bshazard(formula = Surv(enter, time,
                                           status) ~ 1,
                            data = data_used,
                            nbin = length(unique(data_used[which(data_used$status == 1),"time"])))
-  
-  
+
+
   cumhaz_plot <- survminer::ggsurvplot(survfit(formula = Surv(enter, time,
                                                               status) ~ 1,
                                                data = data_used),fun = "cumhaz")
   cumhaz_plot_df <- cumhaz_plot$plot$data
-  
+
   if(i == 1){
     time_index <- 1
   }else{
     time_index <- 5
   }
-  
+
   cumhaz_plot <- ggplot(cumhaz_plot_df, aes(x = time, y = surv))+
     geom_step(colour="red")+
     ylab("Cumulative hazard")+
@@ -706,31 +680,31 @@ for(i in 1:2){
     geom_ribbon(aes(ymin=lower, ymax=upper, fill=strata),
                 alpha=0.3, colour=NA)+ theme_bw()
   assign(paste0("cumhaz_plot",i),cumhaz_plot +ggtitle(cum_haz_vec[i]) )
-  
+
 
   bshazard.df  <- data.frame(time = bshazard.fit[["time"]],
                              hazard = bshazard.fit[["hazard"]],
                              upper.ci = bshazard.fit[["upper.ci"]],
                              lower.ci = bshazard.fit[["lower.ci"]])
-  
-  
-  
+
+
+
   harzard.plt.mod <- function(time.vec, cens.vec, Outcome = "Survival",
                               lrg.haz.int = 3,  bw.method = "local"){
-    
+
     #Plot the hazards
     max.time <- max(time.vec)
-    
+
     result.hazard.pe.lrg <- pehaz(time.vec, cens.vec, width= lrg.haz.int, max.time=round(max_time,0))
     result.smooth <- muhaz(time.vec, cens.vec, b.cor="left",
                            max.time=max.time, bw.method = bw.method)
-    
+
     #Plot the Survival function
-    
+
     plot(result.hazard.pe.lrg,  col="black", main = paste0("Hazards for ", Outcome))
     #result.hazard.pe.sml <- pehaz(time.vec, cens.vec, width=sml.haz.int.inv, max.time=max.time)
     #lines(result.hazard.pe.sml,  col="blue")
-    
+
     lines(result.smooth, col = "red", lty= 2)
     legend("topright", legend = c(paste0(lrg.haz.int," year hazard step function"),
                                   #paste0(sml.haz.int," month hazard step function"),
@@ -741,20 +715,20 @@ for(i in 1:2){
            lty = c(1,
                    #2,
                    2), cex = 0.8)
-    
+
     return(result.hazard.pe.lrg)
   }
-  
-  
+
+
   hazard.PFS.mod <-harzard.plt.mod(time.vec = data_used$time ,
                                    cens.vec =  data_used$status ,
                                    Outcome = "Death", lrg.haz.int = 3)
-  
+
   df.haz <- data.frame(time = hazard.PFS.mod$Cuts[-1]-1,
                        hazard = c(hazard.PFS.mod$Hazard))
-  
-  
-  
+
+
+
   haz_plot_collapsing <- plot(model_used, type = "hazard", max_predict = round(max_time,0),
                               chng.num = model_best_fit)
   haz_df <- haz_plot_collapsing$data %>% mutate(timepoints = timepoints,
@@ -762,10 +736,10 @@ for(i in 1:2){
   haz_df_summary <- haz_df %>% group_by(timepoints) %>% summarize(hazards.mean = mean(hazards),
                                                                   hazards.975 = quantile(hazards, 0.975),
                                                                   hazards.025 = quantile(hazards, 0.025))
-  
-  
-  
-  
+
+
+
+
   assign(paste0("plot",i),ggplot(bshazard.df[which(bshazard.df$time <= round(max_time,0)),], aes(x = time, y = hazard))+
            geom_line(aes(colour = "blue"), size = 1.3,linetype = "longdash")+
            geom_ribbon(aes(ymin = lower.ci, ymax = upper.ci, fill = "blue"), alpha = 0.2)+
@@ -785,9 +759,9 @@ for(i in 1:2){
                                values =c('black'='black','blue'='blue','purple'= 'purple'), labels = c('Interval hazard','bsharzard', 'PEM'))+
            scale_fill_identity(name = '95% Intervals', guide = 'legend',labels = c('bsharzard', "PEM")) +
            theme_light())
-  
-  
-  
+
+
+
 }
 
 #Figure 2 in Publication

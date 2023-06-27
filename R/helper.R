@@ -1434,14 +1434,13 @@ plot.pos_changepoint <- function(obj, breaks = NULL, probs = c(0.025, 0.975)){
 
 }
 
-
-compare_boot_sims <- function (mod_parametric_orig, follow_up_data){
+compare_boot_sims<- function (mod_parametric_orig, follow_up_data){
   t <- mod_parametric_orig$mu_surv_list[[1]][, 2]
   mod_names <- c("expo", "weibull", "gamma", "llogis", "lnorm",
                  "gomp", "gen.gamma", "rps", "piecewise")
   for (i in 1:length(mod_names)) {
-    assign(paste0("Surv.", mod_names[i]),
-           mod_parametric_orig$mu_surv_list[[i]][,grep("Surv|survival",colnames(mod_parametric_orig$mu_surv_list[[i]]))])
+    assign(paste0("Surv.", mod_names[i]), mod_parametric_orig$mu_surv_list[[i]][,
+                                                                                grep("Surv|survival", colnames(mod_parametric_orig$mu_surv_list[[i]]))])
   }
   n.boots <- 1000
   bs <- sjstats::bootstrap(follow_up_data, n.boots)
@@ -1519,9 +1518,10 @@ compare_boot_sims <- function (mod_parametric_orig, follow_up_data){
                           mod_parametric_orig$mod.comp$Model)
   }
   mod_compfinal <- rbind(mod_parametric_orig$mod.comp[index_vals,
-                                                      c("Model", "WAIC")], c(NA, NA, NA, NA))
+                                                      c("Model", "-2log(PML)","WAIC")], c(NA, NA, NA))
   mod_compfinal$Model[nrow(mod_compfinal)] <- "True Observations"
-  mod_compfinal <- cbind(mod_compfinal, AUC, AUC_diff = colMeans(AUC_diff), AUC_diff2 = colMeans(AUC_diff2))
+  mod_compfinal <- cbind(mod_compfinal, AUC, AUC_diff = colMeans(AUC_diff),
+                         AUC_diff2 = colMeans(AUC_diff2))
   mod_compfinal <- mod_compfinal[order(mod_compfinal$AUC_diff),
   ] %>% mutate_if(is.numeric, round, digits = 2)
   mod_compfinal
@@ -1533,12 +1533,12 @@ compare_boot_sims <- function (mod_parametric_orig, follow_up_data){
 
 #' Digitise KM curves
 #'
-#' @param surv_inp
-#' @param nrisk_inp
-#' @param km_output
-#' @param ipd_output
+#' @param surv_inp  See survHE::digitise
+#' @param nrisk_inp See survHE::digitise
+#' @param km_output See survHE::digitise
+#' @param ipd_output See survHE::digitise
 #'
-#' @return
+#' @return Does not return an object
 #' @export
 #'
 digitise <- function(surv_inp,nrisk_inp,km_output="KMdata.txt",ipd_output="IPDdata.txt") {

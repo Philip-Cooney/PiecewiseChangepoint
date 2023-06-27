@@ -4,7 +4,22 @@
 \alias{compare.surv.mods}
 \title{Comparing Piecewise Exponential model with other Parametric models}
 \usage{
-compare.surv.mods(object, max_predict = 10)
+compare.surv.mods(
+  object,
+  max_predict = 10,
+  chng.num = "all",
+  plot.best = 3,
+  n.iter.jags = 2000,
+  n.thin.jags = NULL,
+  n.burnin.jags = NULL,
+  gof = "WAIC",
+  inc_waic = TRUE,
+  km_risk = 0.1,
+  gmp_haz_df = NULL,
+  gpm_post_data = TRUE,
+  col_km = "black",
+  final_chng_only = FALSE
+)
 }
 \arguments{
 \item{object}{of class "changepoint".}
@@ -22,8 +37,4 @@ A list of with the following items:
 \description{
 Compares the piecewise exponential model with 6 other standard parameteric models (see \code{\link[=fit_surv_models]{fit_surv_models()}}). Note that exponential is a special case of the piecewise exponential, however, it is refit in JAGS to highlight the difference in statistical fit.
 This functions computes the individual log-likelihood for the piecewise exponential model (see \code{\link[=get.loglik]{get.loglik()}}) and compares the Widely Applicable Information Criterion (using the \code{\link[loo:loo-package]{loo::loo-package}}) and Pseudo-Marginal Likelihood (PML) with the other standard parametric models.
-}
-\examples{
-\dontrun{
-mod.comp <-compare.surv.mods(Collapsing_Model, df)}
 }

@@ -4,7 +4,7 @@
 \alias{get.loglik}
 \title{Pointwise log-likelihood for the change-point model}
 \usage{
-get.loglik(object, chng.num = "all")
+get.loglik(df, lambda_df, changepoint_df)
 }
 \arguments{
 \item{object}{of class "changepoint".}
@@ -22,4 +22,5 @@ Provides the pointwise log-likelihood contribution for each datapoint and simula
 Can take a considerable time to evaulate.
 log.lik.df <- get.loglik(Collapsing_Model)
 }
+
 }

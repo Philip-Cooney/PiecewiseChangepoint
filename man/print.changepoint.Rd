@@ -16,11 +16,3 @@
 \description{
 Printing of Changepoint model objects
 }
-\examples{
-\notrun{
-Print a summary of the one change-point model
-print(Collapsing_Model, mod = 1)
-Print a summary of the model with the highest posterior probability
-print(Collapsing_Model)
-}
-}

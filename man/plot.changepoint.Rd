@@ -11,6 +11,11 @@
   add.km = T,
   max_predict = 10,
   add.post = T,
+  alpha.pos = NULL,
+  t_pred = NULL,
+  final_chng_only = F,
+  col_km = "black",
+  km_risk = NULL,
   ...
 )
 }

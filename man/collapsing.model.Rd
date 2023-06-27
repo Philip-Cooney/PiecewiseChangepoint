@@ -12,9 +12,8 @@ collapsing.model(
   max.num.breaks = 6,
   n.thin = 1,
   lambda.prior = 1,
-  alpha.hyper = 1,
-  beta.hyper1 = 1,
-  beta.hyper2 = 1
+  timescale = "months",
+  seed.val = NULL
 )
 }
 \arguments{
@@ -32,11 +31,9 @@ collapsing.model(
 
 \item{lambda.prior}{rate parameter for the Poisson prior for number of change-points (default 1).}
 
-\item{alpha.hyper}{value of shape parameter for the gamma prior for the hazard (\eqn{\lambda}). Should always be set to 1. As noted there is a gamma prior on \eqn{\lambda} but also a gamma prior (hyperprior) on the rate parameter of this prior.}
+\item{timescale}{Scale of time. Can be "years", "months" or "days". Defines the values of the alpha and beta parameters so that the analysis on different timescales give the same posterior model probabilities.  value of the unit of time. Controls the prior for lambda in terms of \eqn{\beta}. For timescale of years the prior is a \eqn{\mathcal{G}(1,1)} (gamma) distribution.}
 
-\item{beta.hyper1}{first hyperprior (shape) for the rate parameter of the gamma prior for \eqn{\lambda}. Should be set to 1.}
-
-\item{beta.hyper2}{first hyperprior (rate) for the rate parameter of the gamma prior for \eqn{\lambda}. To insure that inferences are the same when different timescales (i.e. months vs years) are chosen, this hyperprior must be changed. If the analysis is in years this value should be equal to 1, if in months it should be 1/12 and if in days should be 1/365.}
+\item{seed.val}{set seed value to get the same resuls}
 }
 \value{
 A list of the class "changepoint" with the following items:
@@ -57,7 +54,7 @@ Implementation of piecewise exponential models typically assume that the number 
                                                         n.iter = 5000,
                                                         burn_in = 750,
                                                         n.chains = 2,
-                                                        alpha.hyper = 1,
+                                                        timescale = "months",
                                                         beta.hyper1 = 1,
                                                         beta.hyper2 = 1)}
 }
