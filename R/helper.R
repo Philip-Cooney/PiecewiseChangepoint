@@ -1229,7 +1229,7 @@ fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.ja
 
 #' Comparing Piecewise Exponential model with other Parametric models
 #'
-#' Compares the piecewise exponential model with 6 other standard parameteric models (see \code{\link[=fit_surv_models]{fit_surv_models()}}). Note that exponential is a special case of the piecewise exponential, however, it is refit in JAGS to highlight the difference in statistical fit.
+#' Compares the piecewise exponential model with 7 other commonly used parameteric models (see \code{\link[=fit_surv_models]{fit_surv_models()}}). Note that exponential is a special case of the piecewise exponential, however, it is refit in JAGS to highlight the difference in statistical fit.
 #' This functions computes the individual log-likelihood for the piecewise exponential model (see \code{\link[=get.loglik]{get.loglik()}}) and compares the Widely Applicable Information Criterion (using the \code{\link[loo:loo-package]{loo::loo-package}}) and Pseudo-Marginal Likelihood (PML) with the other standard parametric models.
 #'
 #' @param object of class "changepoint".
@@ -1237,8 +1237,8 @@ fit_surv_models <- function (df, max_predict = 10, n.iter.jags = 2000, n.thin.ja
 #'
 #' @return A list of with the following items:
 #'  \itemize{
-#'   \item \strong{model.comp}: A dataframe with the PML and WAIC for the piecewise exponential model and the six parametric models fitted by JAGS.
-#'   \item \strong{jags.models}: A list containing the posterior simulations of the 6 JAGS models (fit using the R2jags:jags function).
+#'   \item \strong{model.comp}: A dataframe with the PML and WAIC for the piecewise exponential model and the six parametric models fitted by JAGS and one fit by Stan.
+#'   \item \strong{jags.models}: A list containing the posterior simulations of the parametric models (fit using the R2jags::jags function and rstan).
 #'   \item \strong{plot_Surv_all}: A ggplot with the posterior mean survival probabilities for the time specified by max_predict.
 #' }
 #' @importFrom loo waic
@@ -1531,7 +1531,7 @@ compare_boot_sims<- function (mod_parametric_orig, follow_up_data){
 
 
 
-#' Digitise KM curves
+#' Digitise KM curves - Copied from survHE
 #'
 #' @param surv_inp  See survHE::digitise
 #' @param nrisk_inp See survHE::digitise
