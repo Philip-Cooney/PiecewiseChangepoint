@@ -250,7 +250,7 @@ Within the ``compare.surv.mods`` function the cumulative hazard of death (associ
 
 We see in the plot below that including the GPM hazard ensures that the extrapolated hazard exhibits the characteristic increasing hazards associated with ageing. 
 
-```{r fig.cap = 'Overview of all TAs investigated', echo = FALSE, out.width='80%', fig.asp=.75, fig.align='center',echo=FALSE,warning=FALSE}
+```{r fig.cap = 'Extrapolated hazards using from Piecewise Exponential including GPM', echo = FALSE, out.width='80%', fig.asp=.75, fig.align='center',echo=FALSE,warning=FALSE}
 
 knitr::include_graphics(paste0("Examples/GPM hazards.png"))
 

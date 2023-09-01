@@ -153,7 +153,7 @@ plot(Collapsing_Model, type = "hazard")+xlab("Time (Months)")+ylab("Hazards")+yl
     ## Scale for y is already present.
     ## Adding another scale for y, which will replace the existing scale.
 
-    ## Warning: Removed 186 rows containing missing values (`geom_step()`).
+    ## Warning: Removed 275 rows containing missing values (`geom_step()`).
 
     ## Warning: Removed 6 rows containing missing values (`geom_line()`).
 
@@ -289,9 +289,9 @@ associated with ageing.
 
 <div class="figure" style="text-align: center">
 
-<img src="Examples/GPM hazards.png" alt="Overview of all TAs investigated" width="80%" />
+<img src="Examples/GPM hazards.png" alt="Extrapolated hazards using from Piecewise Exponential including GPM" width="80%" />
 <p class="caption">
-Overview of all TAs investigated
+Extrapolated hazards using from Piecewise Exponential including GPM
 </p>
 
 </div>
