@@ -2,30 +2,30 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 surv_nochange <- function(time, num_zero, lambda_df) {
-    .Call(`_PiecewiseChangepoint_surv_nochange`, time, num_zero, lambda_df)
+    .Call('_PiecewiseChangepoint_surv_nochange', PACKAGE = 'PiecewiseChangepoint', time, num_zero, lambda_df)
 }
 
 surv_change <- function(time, nrow_curr, lambda_df, changepoint_df, surv_df) {
-    .Call(`_PiecewiseChangepoint_surv_change`, time, nrow_curr, lambda_df, changepoint_df, surv_df)
+    .Call('_PiecewiseChangepoint_surv_change', PACKAGE = 'PiecewiseChangepoint', time, nrow_curr, lambda_df, changepoint_df, surv_df)
 }
 
 exposure_death_alt <- function(total_time_diff, change_nums) {
-    .Call(`_PiecewiseChangepoint_exposure_death_alt`, total_time_diff, change_nums)
+    .Call('_PiecewiseChangepoint_exposure_death_alt', PACKAGE = 'PiecewiseChangepoint', total_time_diff, change_nums)
 }
 
 margin_lik_calc_log <- function(time_diffs, k_indexes, alpha, beta) {
-    .Call(`_PiecewiseChangepoint_margin_lik_calc_log`, time_diffs, k_indexes, alpha, beta)
+    .Call('_PiecewiseChangepoint_margin_lik_calc_log', PACKAGE = 'PiecewiseChangepoint', time_diffs, k_indexes, alpha, beta)
 }
 
 pos_prob <- function(k_indexes, n_events, MLE) {
-    .Call(`_PiecewiseChangepoint_pos_prob`, k_indexes, n_events, MLE)
+    .Call('_PiecewiseChangepoint_pos_prob', PACKAGE = 'PiecewiseChangepoint', k_indexes, n_events, MLE)
 }
 
 RJMCM_core <- function(k, max_breaks, time_diffs, MLE, alpha, beta1, beta2, lambda = 1L) {
-    .Call(`_PiecewiseChangepoint_RJMCM_core`, k, max_breaks, time_diffs, MLE, alpha, beta1, beta2, lambda)
+    .Call('_PiecewiseChangepoint_RJMCM_core', PACKAGE = 'PiecewiseChangepoint', k, max_breaks, time_diffs, MLE, alpha, beta1, beta2, lambda)
 }
 
 Gibbs_core <- function(k, num_breaks, time_diffs, alpha_array, beta_array, MLE, alpha, beta) {
-    .Call(`_PiecewiseChangepoint_Gibbs_core`, k, num_breaks, time_diffs, alpha_array, beta_array, MLE, alpha, beta)
+    .Call('_PiecewiseChangepoint_Gibbs_core', PACKAGE = 'PiecewiseChangepoint', k, num_breaks, time_diffs, alpha_array, beta_array, MLE, alpha, beta)
 }
 
