@@ -187,7 +187,7 @@ ggsave("Examples/Surv-2-chng.png", height = 6, width = 10)
 
 In practical health economic modelling, we require evaluation of the survival function. Assuming time $t$ is within the $j^{\text{th}}$ interval we have calculate the cumulative hazard for this interval as $\lambda_j (t - \tau_{j-1})$ with $\tau_{j-1}$ being the ${j-1}^{\text{th}}$ change-point and $\lambda_j$ the $j^{\text{th}}$  hazard. We also require the cumulative hazard for all the previous intervals which is $\sum_{g=1}^{j-1} \lambda_g(\tau_g - \tau_{g-1})$. The survival probability is the exponential of the negative of the total cumulative hazard $S(t) = \exp(-H(t))$ and is written fully as: 
 
-$$S(t) = \exp\bigg\{- \bigg[\lambda_j (t - \tau_{j-1}) + \sum_{g=1}^{j-1} \lambda_g(\tau_g - \tau_{g-1}) \bigg] \bigg\}.$$
+$$S(t) = \exp\{- [\lambda_j (t - \tau_{j-1}) + \sum_{g=1}^{j-1} \lambda_g(\tau_g - \tau_{g-1}) ] \}.$$
 It is programmatically straightforward to calculate this and the the function ``get_Surv`` evaluates the survival at a vector of user specified times. The user can specific an additional argument ``chng.num`` if they require survival probabilities from a particular change-point number.  
 
 ```

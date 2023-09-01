@@ -153,7 +153,7 @@ plot(Collapsing_Model, type = "hazard")+xlab("Time (Months)")+ylab("Hazards")+yl
     ## Scale for y is already present.
     ## Adding another scale for y, which will replace the existing scale.
 
-    ## Warning: Removed 219 rows containing missing values (`geom_step()`).
+    ## Warning: Removed 186 rows containing missing values (`geom_step()`).
 
     ## Warning: Removed 6 rows containing missing values (`geom_line()`).
 
@@ -182,7 +182,7 @@ intervals which is $\sum_{g=1}^{j-1} \lambda_g(\tau_g - \tau_{g-1})$.
 The survival probability is the exponential of the negative of the total
 cumulative hazard $S(t) = \exp(-H(t))$ and is written fully as:
 
-$$S(t) = \exp\bigg\{- \bigg[\lambda_j (t - \tau_{j-1}) + \sum_{g=1}^{j-1} \lambda_g(\tau_g - \tau_{g-1}) \bigg] \bigg\}.$$
+$$S(t) = \exp\{- [\lambda_j (t - \tau_{j-1}) + \sum_{g=1}^{j-1} \lambda_g(\tau_g - \tau_{g-1}) ] \}.$$
 It is programmatically straightforward to calculate this and the the
 function `get_Surv` evaluates the survival at a vector of user specified
 times. The user can specific an additional argument `chng.num` if they
