@@ -91,25 +91,23 @@ expected value of 1/12 (and days 1/365).
 As we would expect the one change-point model has the highest posterior
 probability.
 
-    print(Collapsing_Model)
-
 ``` r
 print(Collapsing_Model)
 ```
 
     ## Posterior Change-point Probabilities:
-    ##        1         2         3         4         5         6  
-    ## 0.720600  0.219825  0.050400  0.007950  0.000950  0.000275  
+    ##        0         1         2         3         4         5  
+    ## 0.000575  0.809525  0.166000  0.020650  0.002850  0.000400  
     ## 
     ## Summary of 1 change-point model:
     ## 
-    ##   changepoint_1     lambda_1          lambda_2        
-    ##   Min.   :0.7651    Min.   :0.4822    Min.   :0.0964  
-    ##   1st Qu.:0.9196    1st Qu.:0.7078    1st Qu.:0.1880  
-    ##   Median :0.9318    Median :0.7486    Median :0.2133  
-    ##   Mean   :0.9252    Mean   :0.7507    Mean   :0.2159  
-    ##   3rd Qu.:0.9318    3rd Qu.:0.7917    3rd Qu.:0.2409  
-    ##   Max.   :1.2486    Max.   :1.0568    Max.   :0.4006
+    ##   changepoint_1      lambda_1           lambda_2         
+    ##   Min.   : 1.873     Min.   :0.04206    Min.   :0.01170  
+    ##   1st Qu.:11.701     1st Qu.:0.05614    1st Qu.:0.02355  
+    ##   Median :11.900     Median :0.05940    Median :0.02652  
+    ##   Mean   :11.857     Mean   :0.05954    Mean   :0.02682  
+    ##   3rd Qu.:12.603     3rd Qu.:0.06277    3rd Qu.:0.02983  
+    ##   Max.   :19.457     Max.   :0.08456    Max.   :0.04832
 
 Simulations from the posterior distribution for the change-point
 locations and associated hazards can be extracted from the returned
@@ -135,6 +133,7 @@ months). The red lines show the individual posterior simulations and are
 a natural representation of the parameter uncertainty.
 
 ``` r
+library("ggplot2")
 plot(Collapsing_Model, max_predict = 60, chng.num = 1)+xlab("Time (Months)")
 ```
 
@@ -147,15 +146,11 @@ interval will be the one which is extrapolated throughout the time
 horizon.
 
 ``` r
-plot(Collapsing_Model, type = "hazard")+xlab("Time (Months)")+ylab("Hazards")+ylim(c(0,1))
+plot(Collapsing_Model, type = "hazard")+xlab("Time (Months)")+ylab("Hazards")+ylim(c(0,.1))
 ```
 
     ## Scale for y is already present.
     ## Adding another scale for y, which will replace the existing scale.
-
-    ## Warning: Removed 275 rows containing missing values (`geom_step()`).
-
-    ## Warning: Removed 6 rows containing missing values (`geom_line()`).
 
 ![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 

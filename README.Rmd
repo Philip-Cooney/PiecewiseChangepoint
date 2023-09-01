@@ -38,6 +38,8 @@ library("flexsurv")
 library("PiecewiseChangepoint")
 library("latex2exp")
 
+knitr::opts_chunk$set(warning = FALSE)
+
 #Need Rtools for Stan
 #Need Jags
 ```
@@ -124,10 +126,8 @@ Collapsing_Model <- collapsing.model(df,
 
 
 As we would expect the one change-point model has the highest posterior probability. 
-```
-print(Collapsing_Model)
 
-```
+
 ```{r, include=FALSE}
 Collapsing_Model<- readRDS(file = paste0("Examples/Collapsing_Model.rds"))
 
@@ -157,6 +157,7 @@ Collapsing_Model$lambda
 Once we are satisfied that there is good mixing and that we have run the model for long enough (20,000 simulations over 2 chains should be more than enough), we may want to look at a plot of the survivor function. In health economics we are typically interested in long term survival of our parametric models. In this situation we want a plot of the first 5 years which we can do using the _max_predict_ argument (in this case 60 months). The red lines show the individual posterior simulations and are a natural representation of the parameter uncertainty. 
 
 ```{r}
+library("ggplot2")
 plot(Collapsing_Model, max_predict = 60, chng.num = 1)+xlab("Time (Months)")
 
 ```
@@ -169,7 +170,7 @@ ggsave("Examples/Surv-1-chng.png", height = 6, width = 10)
 Similarly we may also want to look at the hazard function. In this situation we only present the hazard up to the maximum time observed in the data. This is because by definition the hazard from the final interval will be the one which is extrapolated throughout the time horizon.
 
 ```{r}
-plot(Collapsing_Model, type = "hazard")+xlab("Time (Months)")+ylab("Hazards")+ylim(c(0,1))
+plot(Collapsing_Model, type = "hazard")+xlab("Time (Months)")+ylab("Hazards")+ylim(c(0,.1))
 
 ```
 
