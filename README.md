@@ -29,8 +29,8 @@ First we load the package and simulate some piecewise exponential data.
 
     ## simulated example
     set.seed(123)
-    n_obs =20
-    n_events_req=20
+    n_obs =300
+    n_events_req=300
     max_time =  24 # months
 
     rate = c(0.75,0.25)/12 # we want to report on months
@@ -147,17 +147,15 @@ interval will be the one which is extrapolated throughout the time
 horizon.
 
 ``` r
-plot(Collapsing_Model, type = "hazard")+xlab("Time (Months)")+ylab("Hazards")+ylim(c(0,.1))
+plot(Collapsing_Model, type = "hazard")+xlab("Time (Months)")+ylab("Hazards")+ylim(c(0,1))
 ```
 
     ## Scale for y is already present.
     ## Adding another scale for y, which will replace the existing scale.
 
-    ## Warning: Removed 50500 rows containing missing values (`geom_step()`).
+    ## Warning: Removed 219 rows containing missing values (`geom_step()`).
 
-    ## Warning: Removed 101 rows containing missing values (`geom_line()`).
-    ## Removed 101 rows containing missing values (`geom_line()`).
-    ## Removed 101 rows containing missing values (`geom_line()`).
+    ## Warning: Removed 6 rows containing missing values (`geom_line()`).
 
 ![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
