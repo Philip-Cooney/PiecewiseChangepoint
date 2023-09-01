@@ -1,0 +1,14 @@
+# When updating package ensure the following:
+
+
+Rcpp::compileAttributes -- Update compileAttributes
+#Rcpp::Rcpp.package.skeleton
+
+Ensure that the NAMESPACE includes:
+
+useDynLib(PiecewiseChangepoint, .registration=TRUE)
+importFrom(Rcpp, evalCpp)
+exportPattern("^[[:alpha:]]+")
+
+#create binary with the following
+devtools::build(binary = TRUE)
